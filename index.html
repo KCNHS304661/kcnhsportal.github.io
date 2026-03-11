@@ -1,7 +1,11 @@
 <!-- 
-    School Portal - v2.9.7 (High Visibility Edition)
+    School Portal - v2.9.8 (High Visibility Edition)
     
     CHANGELOG:
+    v2.9.8 (Mar 2026) - Automated Backups & Archiving:
+    - [FEAT] Developer Actions: Added logic and UI elements for manual Database Archiving (exporting CSVs to Drive) via the Developer Control Panel.
+    - [FEAT] Automated Backups: Added `autoBackupDatabase` function to the backend script to support Google Apps Script time-driven triggers.
+
     v2.9.7 (Mar 2026) - Hotfixes & QoL Improvements:
     - [FIX] Reports & Analytics: Patched an issue where the Learner Profile analytics dashboard would fail to render when clicked.
     - [UX] Reports & Analytics: Enhanced the "Overwrite Existing Report" warning to explicitly display the previously uploaded filename and date.
@@ -37,7 +41,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v2.9.7</title>
+    <title>School Portal v2.9.8</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -16163,7 +16167,21 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             <div class="p-5 border-b border-gray-700 flex justify-between items-center"><h3 class="font-bold flex items-center gap-2"><i class="ph-fill ph-crown text-xl text-${toolColor}-400"></i> ${toolTitle}</h3><span class="bg-${toolColor}-500/20 text-${toolColor}-400 text-[10px] font-bold px-2 py-1 rounded">ACTIVE</span></div>
                             <div class="p-5 border-b border-gray-700 bg-gray-800/50">
                                 <button onclick="App.openUserManager()" class="w-full bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 transition-colors"><i class="ph-bold ph-users-three"></i> Open User Manager</button>
-                                ${this.isDev() ? `<h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">System Identity</h4><div class="grid md:grid-cols-2 gap-4"><div class="space-y-1 col-span-2 md:col-span-1"><label class="text-xs font-medium text-gray-400">App Name</label><div class="flex gap-2"><input type="text" id="dev-app-name" value="${this.settings.appName}" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-green-500 outline-none transition-colors"><button onclick="App.devUpdateAppName()" class="bg-green-600 hover:bg-green-500 px-3 rounded-lg text-xs font-bold transition-colors">SAVE</button></div></div><div class="space-y-1 col-span-2 md:col-span-1"><div class="flex flex-col justify-center bg-gray-900 p-3 rounded-lg border border-gray-600 h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm">Content Opacity</span><span class="text-xs font-bold text-green-400" id="opacity-val">${Math.round(this.settings.bgOpacity * 100)}%</span></div><input type="range" min="0.1" max="1" step="0.05" value="${this.settings.bgOpacity}" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="App.devUpdateOpacity(this.value)"></div></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Logo</label><button onclick="document.getElementById('dev-logo-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-upload-simple"></i> Upload New Icon</button><input type="file" id="dev-logo-upload" class="hidden" accept="image/*" onchange="App.devHandleLogoSelect(this)"></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Background</label><button onclick="document.getElementById('dev-bg-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-image"></i> Upload Wallpaper</button><input type="file" id="dev-bg-upload" class="hidden" accept="image/*" onchange="App.devHandleBackgroundSelect(this)"></div></div>` : ''}
+                                ${this.isDev() ? `<h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6">Database Management</h4>
+                                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                                    <div class="space-y-1">
+                                        <label class="text-xs font-medium text-gray-400">Manual Full Backup</label>
+                                        <button onclick="App.devArchiveDatabase(this)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center shadow-lg transition-colors"><i class="ph-bold ph-archive"></i> Archive Database to CSV</button>
+                                        <p class="text-[10px] text-gray-500 text-center mt-1">Saves all sheets to Google Drive</p>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-xs font-medium text-gray-400">Restore Data</label>
+                                        <button onclick="document.getElementById('dev-archive-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center border border-gray-600 transition-colors"><i class="ph-bold ph-upload-simple"></i> Upload Archive</button>
+                                        <input type="file" id="dev-archive-upload" class="hidden" accept=".csv, .xlsx, .zip" onchange="App.devHandleArchiveUpload(this)">
+                                        <p class="text-[10px] text-gray-500 text-center mt-1">Requires Developer confirmation</p>
+                                    </div>
+                                </div>
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-t border-gray-700 pt-6">System Identity</h4><div class="grid md:grid-cols-2 gap-4"><div class="space-y-1 col-span-2 md:col-span-1"><label class="text-xs font-medium text-gray-400">App Name</label><div class="flex gap-2"><input type="text" id="dev-app-name" value="${this.settings.appName}" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-green-500 outline-none transition-colors"><button onclick="App.devUpdateAppName()" class="bg-green-600 hover:bg-green-500 px-3 rounded-lg text-xs font-bold transition-colors">SAVE</button></div></div><div class="space-y-1 col-span-2 md:col-span-1"><div class="flex flex-col justify-center bg-gray-900 p-3 rounded-lg border border-gray-600 h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm">Content Opacity</span><span class="text-xs font-bold text-green-400" id="opacity-val">${Math.round(this.settings.bgOpacity * 100)}%</span></div><input type="range" min="0.1" max="1" step="0.05" value="${this.settings.bgOpacity}" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="App.devUpdateOpacity(this.value)"></div></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Logo</label><button onclick="document.getElementById('dev-logo-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-upload-simple"></i> Upload New Icon</button><input type="file" id="dev-logo-upload" class="hidden" accept="image/*" onchange="App.devHandleLogoSelect(this)"></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Background</label><button onclick="document.getElementById('dev-bg-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-image"></i> Upload Wallpaper</button><input type="file" id="dev-bg-upload" class="hidden" accept="image/*" onchange="App.devHandleBackgroundSelect(this)"></div></div>` : ''}
                             </div>
                         </div>`;
                 }
@@ -16467,6 +16485,39 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     this.toast('User deleted.');
                     this.openUserManager(); // Refresh list
                 });
+            },
+
+            devArchiveDatabase(btnElement) {
+                this.askConfirm("Trigger Manual Backup?", "This will generate a CSV backup of the entire database and save it to your Google Drive. Proceed?", async () => {
+                    const originalText = btnElement.innerHTML;
+                    btnElement.disabled = true;
+                    btnElement.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Archiving...';
+                    this.toast("Initiating database backup. This might take a moment...", "info");
+
+                    try {
+                        const res = await this.api('archiveDatabase', {});
+                        if (res && res.status === 'success') {
+                            this.toast(`Backup Complete! Saved to Drive: ${res.date}`, "success");
+                        } else {
+                            this.toast("Backup command sent, but check backend logs for validation.", "warning");
+                        }
+                    } catch (e) {
+                        this.toast("Archive request failed.", "error");
+                    } finally {
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = originalText;
+                    }
+                });
+            },
+
+            devHandleArchiveUpload(input) {
+                if (input.files && input.files.length > 0) {
+                    const file = input.files[0];
+                    this.askConfirm("Restore Archive Data?", `You selected '${file.name}'. WARNING: Re-importing raw CSV/Database records requires a precise backend schema match and can overwrite live data. Continue simulation?`, () => {
+                        this.toast("Upload Simulation Complete. Data restoration logic not fully wired for production safety yet.", "warning");
+                        input.value = ''; // Reset input
+                    });
+                }
             },
 
             devUpdateAppName() {
