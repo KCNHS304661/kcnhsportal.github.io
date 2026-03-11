@@ -1,7 +1,12 @@
 <!-- 
-    School Portal - v2.9.8 (High Visibility Edition)
+    School Portal - v2.9.9 (High Visibility Edition)
     
     CHANGELOG:
+    v2.9.9 (Mar 2026) - SF3 Books Inventory Tracking:
+    - [FEAT] Reports & Analytics: Upgraded the 'Classroom & Resources' report template and analytics dashboard. The generic 'Books (SF3)' input has been replaced with 'SF3 Book Title' and 'SF3 Book Copies'.
+    - [FEAT] Reports & Analytics: The system now dynamically parses uploaded book titles (native Excel completion) and renders a custom "SF3 Books Catalog Breakdown" quantifying specific book title inventories.
+    - [FEAT] Reports & Analytics: The 'Classroom & Resources' Excel template generator now dynamically appends a 3rd worksheet named 'Reference - Book Titles' containing all 78 valid JHS and SHS book titles side-by-side to act as an offline copy-paste reference guide.
+
     v2.9.8 (Mar 2026) - Automated Backups & Archiving:
     - [FEAT] Developer Actions: Added logic and UI elements for manual Database Archiving (exporting CSVs to Drive) via the Developer Control Panel.
     - [FEAT] Automated Backups: Added `autoBackupDatabase` function to the backend script to support Google Apps Script time-driven triggers.
@@ -41,7 +46,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v2.9.8</title>
+    <title>School Portal v2.9.9</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -12146,7 +12151,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 label: 'Classroom & Resources',
                 metricLabel: 'Rooms Inventoried',
                 unit: 'rooms',
-                headers: ['Room No', 'Room Type', 'Capacity', 'Current Enrollment', 'Student-Classroom Ratio', 'Armchairs Available', 'Student-Armchair Ratio', 'Textbooks Available', 'Textbook-Student Ratio', 'Learning Materials Status', 'Chairs', 'Tables', 'Teachers Table', 'TVs', 'Electric Fan', 'Books (SF3)'],
+                headers: ['Room No', 'Room Type', 'Capacity', 'Current Enrollment', 'Student-Classroom Ratio', 'Armchairs Available', 'Student-Armchair Ratio', 'Textbooks Available', 'Textbook-Student Ratio', 'Learning Materials Status', 'Chairs', 'Tables', 'Teachers Table', 'TVs', 'Electric Fan', 'SF3 Book Title', 'SF3 Book Copies'],
                 color: 'amber',
                 icon: 'ph-chalkboard-teacher',
                 category: 'Reports',
@@ -14956,16 +14961,37 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 }
                 // ---- CLASSROOM & RESOURCES ----
                 else if (typeId === 'classroom_resources') {
-                    let agg = { totalRooms: 0, totalCapacity: 0, totalEnrollment: 0, totalArmchairs: 0, totalTextbooks: 0, totalChairs: 0, totalTables: 0, totalTeachersTable: 0, totalTvs: 0, totalElectricFan: 0, totalBooksSF3: 0 };
-                    items.forEach(r => { const s = parseStats(r); agg.totalRooms += (s.totalRooms || 0); agg.totalCapacity += (s.totalCapacity || 0); agg.totalEnrollment += (s.totalEnrollment || 0); agg.totalArmchairs += (s.totalArmchairs || 0); agg.totalTextbooks += (s.totalTextbooks || 0); agg.totalChairs += (s.totalChairs || 0); agg.totalTables += (s.totalTables || 0); agg.totalTeachersTable += (s.totalTeachersTable || 0); agg.totalTvs += (s.totalTvs || 0); agg.totalElectricFan += (s.totalElectricFan || 0); agg.totalBooksSF3 += (s.totalBooksSF3 || 0); });
+                    let agg = { totalRooms: 0, totalCapacity: 0, totalEnrollment: 0, totalArmchairs: 0, totalTextbooks: 0, totalChairs: 0, totalTables: 0, totalTeachersTable: 0, totalTvs: 0, totalElectricFan: 0, totalSF3BooksOverall: 0, totalBooksByTitle: {} };
+                    items.forEach(r => {
+                        const s = parseStats(r); agg.totalRooms += (s.totalRooms || 0); agg.totalCapacity += (s.totalCapacity || 0); agg.totalEnrollment += (s.totalEnrollment || 0); agg.totalArmchairs += (s.totalArmchairs || 0); agg.totalTextbooks += (s.totalTextbooks || 0); agg.totalChairs += (s.totalChairs || 0); agg.totalTables += (s.totalTables || 0); agg.totalTeachersTable += (s.totalTeachersTable || 0); agg.totalTvs += (s.totalTvs || 0); agg.totalElectricFan += (s.totalElectricFan || 0); agg.totalSF3BooksOverall += (s.totalSF3BooksOverall || 0);
+                        if (s.totalBooksByTitle) {
+                            for (const [title, count] of Object.entries(s.totalBooksByTitle)) {
+                                agg.totalBooksByTitle[title] = (agg.totalBooksByTitle[title] || 0) + count;
+                            }
+                        }
+                    });
                     const scrRatio = agg.totalRooms > 0 ? (agg.totalEnrollment / agg.totalRooms).toFixed(1) + ':1' : 'N/A';
                     const sarRatio = agg.totalArmchairs > 0 ? (agg.totalEnrollment / agg.totalArmchairs).toFixed(2) + ':1' : 'N/A';
                     const tbrRatio = agg.totalTextbooks > 0 ? (agg.totalTextbooks / agg.totalEnrollment * 100).toFixed(0) + '%' : 'N/A';
+
+                    let bookBadgesHTML = '';
+                    if (Object.keys(agg.totalBooksByTitle).length > 0) {
+                        const sortedBooks = Object.entries(agg.totalBooksByTitle).sort((a, b) => b[1] - a[1]); // Sort by count desc
+                        bookBadgesHTML = sortedBooks.map(([title, count]) => `
+                            <div class="flex justify-between items-center bg-white border border-gray-200 p-2 rounded-lg shadow-sm">
+                                <span class="text-xs font-bold text-gray-700 truncate mr-2" title="${title}">${title}</span>
+                                <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full">${count}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        bookBadgesHTML = `<div class="col-span-1 md:col-span-2 text-center text-xs text-gray-400 py-2">No specific SF3 book titles reported.</div>`;
+                    }
+
                     analyticsHtml = `<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         ${card('ph-house', 'Total Rooms', statCard(agg.totalRooms, 'Inventoried', 'amber'), 'amber')}
                         ${card('ph-users', 'Student:Classroom', statCard(scrRatio, 'Ratio', 'blue'), 'blue')}
                         ${card('ph-chair', 'Student:Armchair', statCard(sarRatio, 'Ratio', 'violet'), 'violet')}
-                        ${card('ph-book', 'SF3 Books', statCard(agg.totalBooksSF3, 'Copies Inventory', 'green'), 'green')}
+                        ${card('ph-book', 'SF3 Books', statCard(agg.totalSF3BooksOverall, 'Total Copies', 'green'), 'green')}
                         
                         <div class="col-span-2 md:col-span-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <h4 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="ph-fill ph-armchair text-xl text-gray-500"></i> Furniture & Appliance Inventory</h4>
@@ -14975,6 +15001,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 ${statCard(agg.totalTeachersTable, 'Teacher Tables', 'gray')}
                                 ${statCard(agg.totalTvs, 'TVs', 'gray')}
                                 ${statCard(agg.totalElectricFan, 'Electric Fans', 'gray')}
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-4 bg-brand-50/50 p-4 rounded-xl border border-brand-100">
+                            <h4 class="text-xs font-bold text-brand-800 uppercase tracking-wider mb-4 flex items-center gap-2"><i class="ph-fill ph-books text-xl text-brand-500"></i> SF3 Books Catalog Breakdown</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                ${bookBadgesHTML}
                             </div>
                         </div>
                     </div>`;
@@ -15773,9 +15806,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             }
                             // ---- CLASSROOM & RESOURCES ----
                             else if (typeId === 'classroom_resources') {
-                                stats = { totalRooms: 0, totalCapacity: 0, totalEnrollment: 0, totalArmchairs: 0, totalTextbooks: 0, roomTypes: {}, materialStatus: {}, totalChairs: 0, totalTables: 0, totalTeachersTable: 0, totalTvs: 0, totalElectricFan: 0, totalBooksSF3: 0 };
+                                stats = { totalRooms: 0, totalCapacity: 0, totalEnrollment: 0, totalArmchairs: 0, totalTextbooks: 0, roomTypes: {}, materialStatus: {}, totalChairs: 0, totalTables: 0, totalTeachersTable: 0, totalTvs: 0, totalElectricFan: 0, totalSF3BooksOverall: 0, totalBooksByTitle: {} };
                                 const iCap = findCol('capacity'), iEnr = findCol('enrollment'), iArm = findCol('armchairs'), iTxt = findCol('textbooks'), iRT = findCol('room type'), iLM = findCol('materials status');
-                                const iChairs = findCol('chairs'), iTables = findCol('tables'), iTTable = findCol('teachers table'), iTvs = findCol('tvs'), iFan = findCol('electric fan'), iBks = findCol('books (sf3)');
+                                const iChairs = findCol('chairs'), iTables = findCol('tables'), iTTable = findCol('teachers table'), iTvs = findCol('tvs'), iFan = findCol('electric fan'), iBkTitle = findCol('sf3 book title'), iBkCopies = findCol('sf3 book copies');
                                 dataRows.forEach(row => {
                                     stats.totalRooms++;
                                     const cap = getNum(row, iCap), enr = getNum(row, iEnr), arm = getNum(row, iArm), txt = getNum(row, iTxt), rt = getVal(row, iRT), lm = getVal(row, iLM);
@@ -15783,13 +15816,21 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                     if (rt) stats.roomTypes[rt] = (stats.roomTypes[rt] || 0) + 1;
                                     if (lm) stats.materialStatus[lm] = (stats.materialStatus[lm] || 0) + 1;
 
-                                    const chairs = getNum(row, iChairs), tables = getNum(row, iTables), ttable = getNum(row, iTTable), tvs = getNum(row, iTvs), fans = getNum(row, iFan), bks = getNum(row, iBks);
+                                    const chairs = getNum(row, iChairs), tables = getNum(row, iTables), ttable = getNum(row, iTTable), tvs = getNum(row, iTvs), fans = getNum(row, iFan);
                                     if (!isNaN(chairs)) stats.totalChairs += chairs;
                                     if (!isNaN(tables)) stats.totalTables += tables;
                                     if (!isNaN(ttable)) stats.totalTeachersTable += ttable;
                                     if (!isNaN(tvs)) stats.totalTvs += tvs;
                                     if (!isNaN(fans)) stats.totalElectricFan += fans;
-                                    if (!isNaN(bks)) stats.totalBooksSF3 += bks;
+
+                                    // Parse SF3 Books by title
+                                    const bookTitleRaw = getVal(row, iBkTitle);
+                                    const bookCopies = getNum(row, iBkCopies);
+                                    if (bookTitleRaw && !isNaN(bookCopies) && bookCopies > 0) {
+                                        const cleanTitle = bookTitleRaw.toUpperCase().trim();
+                                        stats.totalSF3BooksOverall += bookCopies;
+                                        stats.totalBooksByTitle[cleanTitle] = (stats.totalBooksByTitle[cleanTitle] || 0) + bookCopies;
+                                    }
                                 });
                             }
                             // ---- BENEFITS & ASSISTANCE ----
@@ -15896,7 +15937,6 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             }
 
                             metricInput.value = calculatedValue;
-
                         } catch (err) {
                             console.error("Parsing Error", err);
                             this.toast("Could not auto-calculate. Please verify file format.", 'error');
@@ -15906,24 +15946,50 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             this.tempStats = null;
                         }
                     };
-
-
                     reader.readAsArrayBuffer(file);
                 }
             },
 
+            loadSheetJS() {
+                return new Promise((resolve) => {
+                    if (window.XLSX) { resolve(); return; }
+                    const script = document.createElement('script');
+                    script.src = "https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js";
+                    script.onload = resolve;
+                    document.head.appendChild(script);
+                });
+            },
+
+            loadExcelJS() {
+                return new Promise((resolve, reject) => {
+                    if (window.ExcelJS) { resolve(); return; }
+                    const script = document.createElement('script');
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js";
+                    script.onload = () => {
+                        if (window.saveAs) { resolve(); return; }
+                        const fsScript = document.createElement('script');
+                        fsScript.src = "https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js";
+                        fsScript.onload = resolve;
+                        document.head.appendChild(fsScript);
+                    };
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            },
+
             async downloadTemplate() {
-                await this.loadSheetJS();
+                try {
+                    await this.loadExcelJS();
+                } catch (e) {
+                    this.toast("Failed to load Excel library. Check internet.", "error"); return;
+                }
+
                 const typeId = document.getElementById('report-type-select').value;
                 const typeDef = this.reportTypes.find(t => t.id === typeId);
                 if (!typeDef) { this.toast('Error: Report type definition not found.', 'error'); return; }
+
                 const headers = typeDef.headers && typeDef.headers.length > 0 ? typeDef.headers : ['Column1', 'Column2', 'Column3'];
 
-                /* ================================================
-                 * SMART TEMPLATE GENERATOR - v3.0
-                 * Generates XLSX templates with realistic sample
-                 * data for all 11 built-in report types.
-                 * ================================================ */
                 const sampleDataMap = {
                     'learner_profile': h => {
                         const m = { 'LRN': '100100100100', 'Last Name': 'Dela Cruz', 'First Name': 'Juan', 'Middle Name': 'Santos', 'Suffix': '', 'Gender': 'Male', 'Birthdate': '2008-05-15', 'Age': 16, 'Ethnicity': 'Filipino', 'Religion': 'Roman Catholic', 'Address': '123 Rizal St, Kidapawan City', 'Contact No': '09171234567', 'Parent/Guardian': 'Maria Dela Cruz', 'Guardian Contact': '09179876543', 'Emergency Contact Name': 'Jose Dela Cruz', 'Emergency Contact No.': '09171112222', '4Ps': 'Yes', 'Weight (kg)': 55, 'Height (m)': 1.62, 'BMI': 20.96, 'Nutritional Status': 'Normal', 'IP': 'No', 'Grade Level': '10', 'Section': 'Diamond', 'Program JHS': 'STE', 'Program SHS': '' };
@@ -15942,7 +16008,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         return m[h] !== undefined ? m[h] : `Sample ${h} `;
                     },
                     'classroom_resources': h => {
-                        const m = { 'Room No': '101', 'Room Type': 'Regular Classroom', 'Capacity': 50, 'Current Enrollment': 45, 'Student-Classroom Ratio': '45:1', 'Armchairs Available': 48, 'Student-Armchair Ratio': '0.94:1', 'Textbooks Available': 40, 'Textbook-Student Ratio': '0.89:1', 'Learning Materials Status': 'Adequate', 'Chairs': 45, 'Tables': 22, 'Teachers Table': 1, 'TVs': 1, 'Electric Fan': 4, 'Books (SF3)': 50 };
+                        const m = { 'Room No': '101', 'Room Type': 'Regular Classroom', 'Capacity': 50, 'Current Enrollment': 45, 'Student-Classroom Ratio': '45:1', 'Armchairs Available': 48, 'Student-Armchair Ratio': '0.94:1', 'Textbooks Available': 40, 'Textbook-Student Ratio': '0.89:1', 'Learning Materials Status': 'Adequate', 'Chairs': 45, 'Tables': 22, 'Teachers Table': 1, 'TVs': 1, 'Electric Fan': 4, 'SF3 Book Title': 'EARTH AND LIFE SCIENCE', 'SF3 Book Copies': 50 };
                         return m[h] !== undefined ? m[h] : `Sample ${h} `;
                     },
                     'benefits_assistance': h => {
@@ -15986,18 +16052,23 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     const sampleRow = headers.map(sampleFn);
                     const sheetName = typeDef.label.substring(0, 31); // Excel sheet name max 31 chars
 
-                    // Create 3 sample rows to provide a clear example
-                    const ws = XLSX.utils.aoa_to_sheet([headers, sampleRow, sampleRow, sampleRow]);
+                    const workbook = new ExcelJS.Workbook();
+                    const ws = workbook.addWorksheet(sheetName);
 
-                    // Auto-size columns
-                    ws['!cols'] = headers.map((h, i) => ({
-                        wch: Math.max(h.length + 2, String(sampleRow[i]).length + 2, 12)
-                    }));
+                    // Auto-size columns and set headers
+                    ws.columns = headers.map((h, i) => {
+                        return { header: h, key: h, width: Math.max(h.length + 2, String(sampleRow[i]).length + 2, 12) };
+                    });
 
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                    ws.addRow(sampleRow);
+                    ws.addRow(sampleRow);
+                    ws.addRow(sampleRow);
 
                     // --- ADD INSTRUCTIONS & TUTORIAL TAB ---
+                    const wsInstructions = workbook.addWorksheet('Tutorial & Instructions');
+                    wsInstructions.getColumn(1).width = 20;
+                    wsInstructions.getColumn(2).width = 100;
+
                     const instructions = [
                         ["HOW TO USE THIS TEMPLATE (TUTORIAL)"],
                         [""],
@@ -16010,14 +16081,98 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         ["6. Yes / No", "For boolean/logical fields, strictly type 'Yes' or 'No'."],
                         ["7. File Format", "When saving, please retain the .xlsx or .csv format."],
                         ["8. File Naming", "Do not change the base file name. The system validator checks if the required keyword is in the filename."],
-                        [""],
-                        ["Note:", "Once filled out, return to the School Portal and upload this file in the Submit Report modal."]
+                        [""]
                     ];
-                    const wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
-                    wsInstructions['!cols'] = [{ wch: 20 }, { wch: 100 }];
-                    XLSX.utils.book_append_sheet(wb, wsInstructions, 'Tutorial & Instructions');
 
-                    XLSX.writeFile(wb, `${typeDef.label}.xlsx`);
+                    if (typeId === 'classroom_resources') {
+                        instructions.push(["9. SF3 Books", "For the 'SF3 Book Title' column, please select exactly from the Dropdown list, or copy from the 'Reference - Book Titles' tab!"]);
+                    }
+
+                    instructions.push(["Note:", "Once filled out, return to the School Portal and upload this file in the Submit Report modal."]);
+                    instructions.forEach(row => wsInstructions.addRow(row));
+
+                    // --- ADD SF3 BOOK REFERENCE TAB & DROPDOWNS (CLASSROOM RESOURCES ONLY) ---
+                    if (typeId === 'classroom_resources') {
+                        const jhsBooks = [
+                            "ARALING PANLIPUNAN/MAKABANSA", "ENGLISH", "FILIPINO", "GMRC/VALUES EDUCATION",
+                            "MAPEH", "MATHEMATICS", "SCIENCE", "TLE/EPP"
+                        ];
+                        const shsBooks = [
+                            "21ST CENTURY LITERATURE FROM THE PHILIPPINES AND THE WORLD", "AFA", "AGRI-CROP PRODUCTION", "ANIMATION",
+                            "APPLIED ECONOMICS", "AUTOMOTIVE SERVICING", "BASIC CALCULUS", "BREAD AND PASTRY PRODUCTION",
+                            "BUSINESS ETHICS AND SOCIAL RESPONSIBILITY", "BUSINESS FINANCE", "BUSINESS MATH", "CAREGIVING",
+                            "CAREGIVING 12", "CARPENTRY", "COMMERCIAL COOKING", "COMMUNICATION AND RESEARCH IN PHILIPPINE CULTURE AND SOCIETY",
+                            "COMMUNITY ENGAGEMENT, SOLIDARITY, AND CITIZENSHIP", "COMPUTER PROGRAMMING", "COMPUTER SYSTEM SERVICING I",
+                            "COMPUTER SYSTEM SERVICING II", "COMPUTER SYSTEM SERVICING III", "COMPUTER SYSTEM SERVICING IV",
+                            "CONTEMPORARY PHILIPPINE ARTS FROM THE REGIONS", "COOKERY", "COOKERY I", "COOKERY Il",
+                            "CREATIVE IND. 2", "CREATIVE IND.1", "CREATIVE WRITING / MALIKHAING PAGSULAT", "CSS",
+                            "DANCE", "DEVELOPING FILIPINO IDENTITY IN THE ARTS", "DISASTER READINESS AND RISK REDUCTION",
+                            "DISCIPLINES AND IDEAS IN THE APPLIED SOCIAL SCIENCES", "DISCIPLINES AND IDEAS IN THE SOCIAL SCIENCES",
+                            "DRESSMAKING", "EARTH AND LIFE SCIENCE", "EARTH SCIENCE", "EIM", "EIM III", "EIM IV", "EMPOWERMENT TECHNOLOGIES",
+                            "ENGLISH FOR ACADEMIC AND PROFESSIONAL PURPOSES", "ENTREPRENEURSHIP", "EPAS", "FASHION ACCESSORIES",
+                            "FBS", "FCS", "FILIPINO SA PILING LARANG AKADEMIK)", "FILIPINO SA PILING LARANG (TEKBOK)",
+                            "FOOD AND BEVERAGES SERVICES", "FRONT OFFICE SERVICES", "GENERAL BIOLOGY 1", "GENERAL BIOLOGY 2",
+                            "GENERAL CHEMISTRY 1", "GENERAL CHEMISTRY 2", "GENERAL MATHEMATICS", "GENERAL PHYSICS 1", "GENERAL PHYSICS 2",
+                            "HANDICRAFT", "HOME ECONOMICS", "HOUSEHOLD SERVICES", "HOUSEKEEPING", "HUMAN MOVEMENT", "HUMANITIES 1",
+                            "HUMANITIES 2", "IA", "ICT", "INQUIRIES, INVESTIGATIONS, AND IMMERSION", "INTRODUCTION TO PHILOSOPHY OF THE HUMAN PERSON",
+                            "INTRODUCTION TO WORLD RELIGIONS AND BELIEF SYSTEMS", "KOMUNIKASYON AT PANANALIKSIK SA WIKA AT KULTURANG FILIPINO",
+                            "LEADERSHIP AND MANAGEMENT IN DIFFERENT ARTS AND FIELDS", "LOCAL TOUR GUIDING", "MEDIA AND INFORMATION LITERACY",
+                            "MEDIA ARTS", "MUSIC", "NAIL CARE SERVICES", "NEEDLECRAFT", "ORAL COMMUNICATION", "ORGANIZATION AND MANAGEMENT",
+                            "PAGBASA AT PAGSUSURI NG IBA'T IBANG TEKSTO TUNGO SA PANANALIKSIK", "PHILIPPINE POLITICS AND GOVERNANCE", "PHILOSOPHY",
+                            "PHYSICAL AND PERSONAL DEVELOPMENT IN THE ARTS", "PHYSICAL EDUCATION AND HEALTH", "PHYSICAL SCIENCE", "PLUMBING",
+                            "PRACTICAL RESEARCH 1", "PRACTICAL RESEARCH 2", "PRE-CALCULUS", "PRINCIPLES OF MARKETING",
+                            "PSYCHOSOCIAL ASPECTS OF SPORTS AND EXERCISE", "READING AND WRITING", "READING AND WRITING VARIOUS TEXTS TOWARDS RESEARCH",
+                            "SAFETY AND FIRST AID", "SMAW", "SOCIAL SCIENCE 1", "SOCIAL SCIENCE 2", "SPORTS OFFICIATING AND ACTIVITY MANAGEMENT",
+                            "STATISTICS AND PROBABILITY", "TECHNICAL DRAFTING", "THEATER ARTS", "TOURISM PROMOTIONS SERVICES", "TRAVEL SERVICES",
+                            "TRENDS, NETWORKS, AND CRITICAL THINKING IN THE 21ST CENTURY", "UNDERSTANDING CULTURE, SOCIETY AND POLITICS",
+                            "VISUAL ARTS", "WEB DEVELOPMENT", "WORK IMMERSION/CULMINATING ACTIVITY"
+                        ];
+
+                        const wsReference = workbook.addWorksheet('Reference - Book Titles');
+                        wsReference.getColumn(1).width = 45;
+                        wsReference.getColumn(2).width = 65;
+                        wsReference.getColumn(3).width = 75; // Hidden master list for dropdown validation
+
+                        wsReference.addRow(["SF3 BOOK TITLE REFERENCE GUIDE", "", "ALL VALID TITLES (Do Not Edit)"]);
+                        wsReference.addRow(["Use these exact spellings when encoding under the 'SF3 Book Title' column.", "", ""]);
+                        wsReference.addRow(["", "", ""]);
+                        wsReference.addRow(["JUNIOR HIGH SCHOOL (Grades 7-10)", "SENIOR HIGH SCHOOL (Grades 11-12)", "Combined List"]);
+
+                        const allBooks = [...jhsBooks, ...shsBooks];
+                        const maxRows = Math.max(jhsBooks.length, shsBooks.length, allBooks.length);
+
+                        for (let i = 0; i < maxRows; i++) {
+                            wsReference.addRow([
+                                jhsBooks[i] || "",
+                                shsBooks[i] || "",
+                                allBooks[i] || ""
+                            ]);
+                        }
+
+                        // Protect the reference sheet so they don't mess up the validation formulas
+                        wsReference.protect('secret123', {});
+
+                        // ATTACH DATA VALIDATION DROPDOWN IN THE MAIN SHEET!
+                        const titleColIndex = headers.indexOf('SF3 Book Title') + 1;
+                        if (titleColIndex > 0) {
+                            // Apply validation from Row 2 down to Row 1000
+                            for (let r = 2; r <= 1000; r++) {
+                                ws.getCell(r, titleColIndex).dataValidation = {
+                                    type: 'list',
+                                    allowBlank: true,
+                                    showErrorMessage: true,
+                                    errorTitle: 'Invalid Book Title',
+                                    error: 'Please select a book title from the dropdown list.',
+                                    formulae: [`'Reference - Book Titles'!$C$5:$C$${allBooks.length + 4}`]
+                                };
+                            }
+                        }
+                    }
+
+                    // Save Excel File via ExcelJS and FileSaver
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    saveAs(new Blob([buffer], { type: "application/octet-stream" }), `${typeDef.label}.xlsx`);
+
                 } catch (e) {
                     console.error(e);
                     this.toast("Error generating Excel template. Falling back to CSV.", "error");
@@ -16027,7 +16182,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 // Show Warning Prompt
                 setTimeout(() => {
                     const html = `
-            <div class="text-center">
+                        <div class="text-center">
                             <div class="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <i class="ph-fill ph-warning text-3xl"></i>
                             </div>
