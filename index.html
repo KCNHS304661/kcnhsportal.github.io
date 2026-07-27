@@ -1,25 +1,23 @@
 <!-- 
-    School Portal - v3.0.1
-    
+    School Portal - v4.0.2
+
     CHANGELOG:
-    v3.0.1 (Jul 2026) - Mobile Navigation Fix [FIX]:
-    - [FIX] Mobile: Fixed sidebar showing on top of mobile content on mobile devices.
-    - [FIX] Mobile: Replaced flawed JS class-toggle with a CSS-only .sidebar-visible class (only applies display:flex at >=768px).
-    - [FIX] Mobile: Fixed mobile header and bottom nav toggling to work correctly via .nav-app-visible class.
+    v4.0.2 (Jul 27, 2026 02:02 PM) - Mobile Back Button & Edge Swipe Gesture Navigation [FEAT]:
+    - [FEAT] Navigation: Added history.pushState() tracking on tab switches so mobile back buttons return to previous portal pages.
+    - [FEAT] Gestures: Added setupSwipeNavigation() edge-swipe right gesture listener for iOS and Android swipe-back navigation.
+    - [FEAT] Navigation: Added popstate event handler in init() to handle browser forward/back buttons smoothly without duplicate history entries.
 
-    v3.0.0 (Jul 2026) - Mobile Responsiveness & Security Hardening:
-    - [FIX] Mobile: Corrected broken CSS class on #mobile-header and #bottom-nav (hidden md:hidden -> flex md:hidden).
-    - [FIX] Mobile: Improved #main-view padding, overscroll-behavior, and overflow-x handling.
-    - [FIX] Security: Removed USR-MOCK-DEV localStorage spoofing backdoor from isDev() check.
-    - [FIX] Security: Obfuscated Developer role string via atob() to prevent DevTools inspection.
-    - [FEAT] Security: Session integrity guard in refreshData() blocks localStorage role tampering.
+    v4.0.1 (Jul 27, 2026 01:57 PM) - KCNHS Connect Branding & Instant Rendering [FEAT]:
+    - [FEAT] Branding: Integrated official KCNHS Connect logo, portal title, background image, opacity (0.6), and School Year 2026-2027 into default App.settings.
+    - [FIX] Auth: Prevented Guest Bulletin background fetch from interrupting active Sign In / Registration form views.
 
-    v2.9.10 (Mar 2026) - Auto-Backups & Archiving:
-    - [FEAT] Database: autoBackupDatabase function added for Drive CSV export.
-    - [API] archiveDatabase: developer endpoint for manual backup.
+    v4.0.0 (Jul 27, 2026 01:40 PM) - Major Platform Upgrade [FEAT]:
+    - [FEAT] Guest Bulletin: Unauthenticated visitors can view public school announcements in read-only mode without login.
+    - [FEAT] Registration Key System: Expiring registration key required for registration, managed by Principal/Asst. Principal/Developer.
+    - [FEAT] Enhanced Forgot Password: Match email + full name + registration key to generate instant temporary password.
 
-    v2.9.9 (Mar 2026) - SF3 Books Inventory Tracking:
-    - [FEAT] Classroom & Resources template upgraded with SF3 Book Title and SF3 Book Copies.
+    v3.0.1 (Jul 27, 2026 01:20 PM) - Mobile Navigation Fix [FIX]:
+    - [FIX] Mobile: Fixed sidebar showing on top of mobile content on mobile devices via .sidebar-visible CSS class.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -11887,7 +11885,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
         }
 
         /* Auth form: ensure full page scroll works on small phones */
-        #main-view > div[class*="min-h"] {
+        #main-view>div[class*="min-h"] {
             min-height: calc(100dvh - 5rem);
         }
 
@@ -11900,11 +11898,14 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
          * On mobile (<768px) it has no effect, keeping sidebar hidden.
          * ============================================== */
         #sidebar {
-            display: none; /* Always hidden by default */
+            display: none;
+            /* Always hidden by default */
         }
+
         @media (min-width: 768px) {
             #sidebar.sidebar-visible {
-                display: flex; /* Only shown on desktop when logged in */
+                display: flex;
+                /* Only shown on desktop when logged in */
             }
         }
 
@@ -11912,10 +11913,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
         #mobile-header {
             display: none;
         }
+
         /* Show on mobile only when app is active (JS adds .nav-app-visible) */
         #mobile-header.nav-app-visible {
             display: flex;
         }
+
         /* On desktop, always keep it hidden regardless */
         @media (min-width: 768px) {
             #mobile-header {
@@ -11927,9 +11930,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
         #bottom-nav {
             display: none;
         }
+
         #bottom-nav.nav-app-visible {
             display: flex;
         }
+
         @media (min-width: 768px) {
             #bottom-nav {
                 display: none !important;
@@ -12040,7 +12045,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     <i class="ph ph-sign-out"></i> Sign Out
                 </button>
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-400 font-medium">School Portal v2.9.5</p>
+                    <p class="text-[10px] text-gray-400 font-medium">School Portal v4.0.1</p>
                     <p class="text-[9px] text-gray-300 mt-0.5">Developed by Rion</p>
                 </div>
             </div>
@@ -12096,8 +12101,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         <span
                             class="text-[10px] font-medium text-gray-400 group-[.active]:text-brand-600">Directory</span>
                     </button>
-                    <button onclick="App.router('reports')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
-                        data-target="reports">
+                    <button onclick="App.router('reports')"
+                        class="nav-btn group flex flex-1 flex-col items-center gap-1" data-target="reports">
                         <i
                             class="ph ph-chart-pie-slice text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
                         <span
@@ -12110,8 +12115,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             class="ph ph-siren text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
                         <span class="text-[10px] font-medium text-gray-400 group-[.active]:text-brand-600">DRRM</span>
                     </button>
-                    <button onclick="App.router('profile')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
-                        data-target="profile">
+                    <button onclick="App.router('profile')"
+                        class="nav-btn group flex flex-1 flex-col items-center gap-1" data-target="profile">
                         <div
                             class="w-7 h-7 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent group-[.active]:ring-brand-600 transition-all">
                             <img id="nav-avatar" src="" alt="Profile" class="w-full h-full object-cover">
@@ -12150,8 +12155,72 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
         // Base64 encoded to prevent casual scraping from source code inspection
         const API_URL = atob('aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4c2RRR2NJNnBYZWxhYkl2OWw2MmpoWVR5MGdzNFlmX0tfM0JhVkZ5Umw0b3ByNjR0bWdoX0wwSE1CcE1lSmUzRG0vZXhlYw==');
 
-        const DB_KEY_CURRENT = 'School_session_v2.8'; // Only stores session locally now
-        const DB_CACHE_DATA = 'School_cache_v2.8'; // [ADDED] Stale-While-Revalidate Cache
+        // ==========================================
+        //  INDEXEDDB STORAGE ADAPTER (v4.0.0)
+        // ==========================================
+        class LocalDB {
+            static DB_NAME = 'KCNHSConnect_IDB_v4';
+            static DB_VERSION = 1;
+            static dbPromise = null;
+
+            static open() {
+                if (this.dbPromise) return this.dbPromise;
+                this.dbPromise = new Promise((resolve, reject) => {
+                    const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('session')) db.createObjectStore('session');
+                        if (!db.objectStoreNames.contains('cache')) db.createObjectStore('cache');
+                        if (!db.objectStoreNames.contains('uploadQueue')) db.createObjectStore('uploadQueue');
+                    };
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = (e) => resolve(null);
+                });
+                return this.dbPromise;
+            }
+
+            static async get(storeName, key) {
+                try {
+                    const db = await this.open();
+                    if (!db) return null;
+                    return new Promise((resolve) => {
+                        const tx = db.transaction(storeName, 'readonly');
+                        const req = tx.objectStore(storeName).get(key);
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    });
+                } catch (e) { return null; }
+            }
+
+            static async set(storeName, key, value) {
+                try {
+                    const db = await this.open();
+                    if (!db) return false;
+                    return new Promise((resolve) => {
+                        const tx = db.transaction(storeName, 'readwrite');
+                        const req = tx.objectStore(storeName).put(value, key);
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = () => resolve(false);
+                    });
+                } catch (e) { return false; }
+            }
+
+            static async delete(storeName, key) {
+                try {
+                    const db = await this.open();
+                    if (!db) return false;
+                    return new Promise((resolve) => {
+                        const tx = db.transaction(storeName, 'readwrite');
+                        const req = tx.objectStore(storeName).delete(key);
+                        req.onsuccess = () => resolve(true);
+                        req.onerror = () => resolve(false);
+                    });
+                } catch (e) { return false; }
+            }
+        }
+
+        const DB_KEY_CURRENT = 'userSession';
+        const DB_CACHE_DATA = 'appCache';
 
         // --- EMBEDDED TEMPLATES ---
         const STUDENT_GEN_INFO_TEMPLATE = "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";
@@ -12309,7 +12378,14 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             reportTypes: [],
             posts: [],
             groups: [],
-            settings: { appName: 'School Portal', logo: null, opaqueBg: false, bgOpacity: 0.8, backgroundImage: null },
+            settings: {
+                appName: 'KCNHS Connect',
+                logo: 'https://drive.google.com/uc?id=1KC0jOetPztUJfE7I6my9qHmCZrbBuOLy&export=download',
+                opaqueBg: false,
+                bgOpacity: 0.6,
+                backgroundImage: 'https://drive.google.com/uc?id=135QumiUuK1vyZMCIuyaIzy4wmIyPWAqL&export=download',
+                activeSchoolYear: '2026-2027'
+            },
             searchHistory: [], // Initialized in init()
 
             // Pagination state
@@ -12328,35 +12404,47 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             refreshInterval: null,
 
             async init() {
-                // Check locally stored session FIRST (Optimistic Auth)
+                // SWR Caching: Load cached data & custom settings from IndexedDB for instant render
+                try {
+                    const cache = await LocalDB.get('cache', DB_CACHE_DATA);
+                    if (cache) {
+                        const data = typeof cache === 'string' ? JSON.parse(cache) : cache;
+                        if (data.users) this.users = data.users;
+                        if (data.posts) this.posts = data.posts;
+                        if (data.groups) this.groups = data.groups;
+                        if (data.reportTypes) this.reportTypes = data.reportTypes;
+                        if (data.reports) this.reports = data.reports;
+                        if (data.settings) this.settings = { ...this.settings, ...data.settings };
+                    }
+                } catch (e) { console.warn("Cache load failed", e); }
+
+                this.applySettings();
+
+                // Check locally stored session FIRST via IndexedDB (with legacy localStorage migration)
                 let session = null;
                 try {
-                    session = localStorage.getItem(DB_KEY_CURRENT);
+                    session = await LocalDB.get('session', DB_KEY_CURRENT);
+                    if (!session) {
+                        const legacy = localStorage.getItem('School_session_v2.8');
+                        if (legacy) {
+                            try {
+                                session = JSON.parse(legacy);
+                                await LocalDB.set('session', DB_KEY_CURRENT, session);
+                                localStorage.removeItem('School_session_v2.8');
+                            } catch (e) { }
+                        }
+                    }
                 } catch (e) { console.warn('Storage restricted', e); }
 
                 if (session) {
                     try {
-                        this.user = JSON.parse(session);
+                        this.user = typeof session === 'string' ? JSON.parse(session) : session;
                         this.updateSidebarIdentity();
 
                         try {
-                            const history = localStorage.getItem('DIRECTORY_SEARCH_HISTORY');
-                            if (history) this.searchHistory = JSON.parse(history);
+                            const history = await LocalDB.get('cache', 'DIRECTORY_SEARCH_HISTORY') || localStorage.getItem('DIRECTORY_SEARCH_HISTORY');
+                            if (history) this.searchHistory = typeof history === 'string' ? JSON.parse(history) : history;
                         } catch (e) { this.searchHistory = []; }
-
-                        // [ADDED] SWR Caching: Load from cache first for instant render
-                        try {
-                            const cache = localStorage.getItem(DB_CACHE_DATA);
-                            if (cache) {
-                                const data = JSON.parse(cache);
-                                if (data.users) this.users = data.users;
-                                if (data.posts) this.posts = data.posts;
-                                if (data.groups) this.groups = data.groups;
-                                if (data.reportTypes) this.reportTypes = data.reportTypes;
-                                if (data.reports) this.reports = data.reports;
-                                if (data.settings) this.settings = data.settings;
-                            }
-                        } catch (e) { console.warn("Cache load failed", e); }
 
                         let initialRoute = window.location.hash.replace('#', '') || 'home';
                         const validRoutes = ['home', 'groups', 'reports', 'directory', 'drrm', 'profile'];
@@ -12364,37 +12452,79 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                         this.router(initialRoute);
 
-                        // Listen for browser back/forward navigation
-                        window.addEventListener('hashchange', () => {
-                            let currentRoute = window.location.hash.replace('#', '') || 'home';
+                        // Listen for browser back/forward navigation (swipes, hardware/software back buttons)
+                        const handleNav = () => {
+                            let currentRoute = window.location.hash.replace('#', '') || (this.user ? 'home' : 'guest');
+                            const validRoutes = ['home', 'groups', 'reports', 'directory', 'drrm', 'profile', 'guest', 'login', 'register'];
                             if (validRoutes.includes(currentRoute)) {
-                                this.router(currentRoute);
+                                this.router(currentRoute, true);
                             }
-                        });
+                        };
+                        window.addEventListener('popstate', handleNav);
+                        window.addEventListener('hashchange', handleNav);
 
                         // SWR: Fetch fresh data silently in the background after UI paint
                         setTimeout(() => {
                             this.refreshData(true);
                         }, 100);
 
-                        this.startAutoRefresh(); // [ADDED] Auto Refresh
+                        this.startAutoRefresh();
                     } catch (e) {
                         console.error("Session parse error", e);
                         this.user = null;
-                        this.router('landing');
+                        this.router('guest');
                     }
                 } else {
-                    this.router('login');
+                    let route = window.location.hash.replace('#', '') || 'guest';
+                    if (route === 'login' || route === 'register') {
+                        this.router(route);
+                    } else {
+                        this.router('guest');
+                    }
+
+                    // Background fetch public data (posts & settings) for guest
+                    setTimeout(() => {
+                        this.refreshData(true);
+                    }, 100);
                 }
 
-                // Global Event Listeners
+                // Global Event Listeners & Touch Gestures
                 this.setupTooltips();
+                this.setupSwipeNavigation();
 
                 // Simplify Auto-Refresh Lifecycle (Pause on blur, Resume on focus)
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) this.stopAutoRefresh();
                     else this.startAutoRefresh();
                 });
+            },
+
+            setupSwipeNavigation() {
+                let touchStartX = 0;
+                let touchStartY = 0;
+
+                document.addEventListener('touchstart', (e) => {
+                    if (e.touches && e.touches.length === 1) {
+                        touchStartX = e.touches[0].clientX;
+                        touchStartY = e.touches[0].clientY;
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchend', (e) => {
+                    if (!e.changedTouches || e.changedTouches.length !== 1) return;
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+
+                    const deltaX = touchEndX - touchStartX;
+                    const deltaY = touchEndY - touchStartY;
+
+                    // Swipe right from left edge (start within 40px of left screen edge, horizontal distance > 80px, vertical drift < 60px)
+                    if (touchStartX < 40 && deltaX > 80 && Math.abs(deltaY) < 60) {
+                        if (window.history.length > 1) {
+                            window.history.back();
+                        }
+                    }
+                }, { passive: true });
             },
 
             startAutoRefresh() {
@@ -12511,6 +12641,21 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             async refreshData(silent = false) {
+                if (!this.user) {
+                    try {
+                        const [resPosts, resSettings] = await Promise.all([
+                            this.api('getPosts'),
+                            this.api('getSettings')
+                        ]);
+                        if (resPosts && resPosts.posts) this.posts = resPosts.posts;
+                        if (resSettings && resSettings.settings) {
+                            this.settings = { ...this.settings, ...resSettings.settings };
+                            this.applySettings();
+                        }
+                    } catch (e) { }
+                    return;
+                }
+
                 if (!silent) this.showLoader(true);
                 try {
                     const [resUsers, resPosts, resGroups, resRepTypes, resReports, resSettings] = await Promise.all([
@@ -12562,16 +12707,16 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         this.applySettings();
                     }
 
-                    // [ADDED] SWR Caching: Save fresh data to localStorage
+                    // SWR Caching: Save fresh data to IndexedDB
                     try {
-                        localStorage.setItem(DB_CACHE_DATA, JSON.stringify({
+                        LocalDB.set('cache', DB_CACHE_DATA, {
                             users: this.users,
                             posts: this.posts,
                             groups: this.groups,
                             reportTypes: this.reportTypes,
                             reports: this.reports,
                             settings: this.settings
-                        }));
+                        });
                     } catch (e) { console.warn("Cache save failed", e); }
 
                     // Re-render current view if active (to show new data)
@@ -12617,7 +12762,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             isPrincipal() { return this.user && (this.user.role === 'Principal' || this.user.role === 'Assistant Principal' || (this.user.position || '').includes('PSDS')); },
             isFaculty() { return this.user && this.user.role === 'Faculty'; },
 
-            saveSession() { localStorage.setItem(DB_KEY_CURRENT, JSON.stringify(this.user)); },
+            async saveSession() {
+                if (this.user) {
+                    await LocalDB.set('session', DB_KEY_CURRENT, this.user);
+                }
+            },
 
             isDrrm() {
                 /* v2.9.3: DRRM position users only get access to DRRM Corner */
@@ -13039,7 +13188,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 return diffDays > 365;
             },
 
-            router(route) {
+            router(route, isBackNavigation = false) {
                 const main = document.getElementById('main-view');
                 const mobHeader = document.getElementById('mobile-header');
                 const mobNav = document.getElementById('bottom-nav');
@@ -13102,11 +13251,17 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 this.chatLimit = 10;
 
                 if (route !== 'landing' && route !== 'login') {
-                    window.history.replaceState(null, '', '#' + route);
+                    if (!isBackNavigation) {
+                        const currentHash = window.location.hash.replace('#', '');
+                        if (currentHash !== route) {
+                            window.history.pushState({ route: route }, '', '#' + route);
+                        }
+                    }
                 }
 
                 switch (route) {
                     case 'landing': this.renderLanding(main); break;
+                    case 'guest': this.renderGuest(main); break;
                     case 'home': this.renderHome(main); break;
                     case 'directory': this.renderDirectory(main); break; // [ADDED]
                     case 'groups': this.renderGroups(main); break;
@@ -13115,6 +13270,134 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     case 'profile': this.renderProfile(main); break;
                     default: this.renderAuth(route, main);
                 }
+            },
+
+            // --- GUEST BULLETIN VIEW (v4.0.0) ---
+            async renderGuest(container) {
+                if (!container) container = document.getElementById('main-view');
+
+                this._renderGuestHTML(container);
+
+                if (!this._guestPostsLoaded && !this._fetchingGuestPosts) {
+                    this._fetchingGuestPosts = true;
+                    try {
+                        const res = await this.api('getPosts');
+                        if (res && res.posts) {
+                            this.posts = res.posts;
+                        }
+                    } catch (e) {
+                        console.warn('Guest posts load failed', e);
+                    }
+                    this._fetchingGuestPosts = false;
+                    this._guestPostsLoaded = true;
+
+                    // Only re-render if current view is STILL guest!
+                    const currentRoute = window.location.hash.replace('#', '') || 'guest';
+                    if (currentRoute === 'guest' && !this.user) {
+                        this._renderGuestHTML(container);
+                    }
+                }
+            },
+
+            _renderGuestHTML(container) {
+                if (!container) return;
+                container.innerHTML = `
+                    <div class="max-w-4xl mx-auto px-4 py-6 animate-fade-in">
+                        <!-- GUEST HEADER BAR -->
+                        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                                    ${this.settings.logo ? `<img src="${this.resolveImageUrl(this.settings.logo)}" class="w-full h-full object-cover">` : `<i class="ph-fill ph-student text-2xl"></i>`}
+                                </div>
+                                <div>
+                                    <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">${this.settings.appName}</h1>
+                                    <p class="text-xs text-gray-500 font-medium">Public School Bulletin & Announcements</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="App.router('login')" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                                    <i class="ph-bold ph-sign-in"></i> Sign In
+                                </button>
+                                <button onclick="App.router('register')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm rounded-xl transition-all active:scale-95">
+                                    Register
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PUBLIC BULLETIN HERO -->
+                        <div class="mb-6 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                    <i class="ph-fill ph-megaphone text-brand-600 text-2xl"></i> School Bulletin
+                                </h2>
+                                <p class="text-xs text-gray-500 mt-0.5">Read-only view for visitors, students, and guests</p>
+                            </div>
+                            <span class="text-xs bg-brand-50 text-brand-700 font-bold px-3 py-1.5 rounded-full border border-brand-100 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> Live Posts
+                            </span>
+                        </div>
+
+                        <!-- POSTS FEED (READ ONLY) -->
+                        <div class="space-y-6">
+                            ${this._fetchingGuestPosts ? `
+                                <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                                    <div class="w-12 h-12 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="ph ph-spinner animate-spin text-3xl"></i>
+                                    </div>
+                                    <h3 class="text-base font-bold text-gray-900">Loading Announcements...</h3>
+                                </div>
+                            ` : this.posts.length === 0 ? `
+                                <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="ph-fill ph-article text-3xl"></i>
+                                    </div>
+                                    <h3 class="text-base font-bold text-gray-900">No Announcements Yet</h3>
+                                    <p class="text-xs text-gray-400 mt-1">Check back later for school updates and posts.</p>
+                                </div>
+                            ` : this.posts.map(post => `
+                                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <img src="${this.resolveImageUrl(post.avatar) || `https://ui-avatars.com/api/?name=${post.author}&background=random`}" class="w-10 h-10 rounded-full object-cover">
+                                            <div>
+                                                <h4 class="font-bold text-gray-900 text-sm">${post.author}</h4>
+                                                <p class="text-xs text-gray-400">${post.role || 'Faculty'} • ${this.formatDate(post.time)}</p>
+                                            </div>
+                                        </div>
+                                        ${post.tag ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">${post.tag}</span>` : ''}
+                                    </div>
+
+                                    <div class="text-gray-800 text-sm whitespace-pre-line leading-relaxed">
+                                        ${post.content}
+                                    </div>
+
+                                    ${post.media ? `
+                                        <div class="rounded-xl overflow-hidden border border-gray-100 max-h-96">
+                                            ${post.mediaType === 'video' ? `<video src="${post.media}" controls class="w-full h-full object-cover"></video>` : `<img src="${this.resolveImageUrl(post.media)}" class="w-full h-full object-cover">`}
+                                        </div>
+                                    ` : ''}
+
+                                    <!-- GUEST INTERACTION BAR (LOCKED) -->
+                                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                                        <div class="flex items-center gap-4">
+                                            <button onclick="App.toast('Please sign in to like announcements.', 'info')" class="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                                                <i class="ph ph-heart text-base"></i>
+                                                <span>${Array.isArray(post.likes) ? post.likes.length : 0} Likes</span>
+                                            </button>
+                                            <button onclick="App.toast('Please sign in to view and write comments.', 'info')" class="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                                                <i class="ph ph-chat-circle text-base"></i>
+                                                <span>${Array.isArray(post.comments) ? post.comments.length : 0} Comments</span>
+                                            </button>
+                                        </div>
+                                        <button onclick="App.router('login')" class="text-brand-600 font-semibold hover:underline">
+                                            Sign in to interact →
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
             },
 
             // --- LANDING PAGE ---
@@ -13170,10 +13453,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             renderAuth(type, container) {
                 if (!container) container = document.getElementById('main-view');
 
-                document.getElementById('mobile-header').classList.remove('nav-app-visible');
-                document.getElementById('bottom-nav').classList.remove('nav-app-visible');
-                document.getElementById('sidebar').classList.remove('sidebar-visible');
+                document.getElementById('mobile-header')?.classList.remove('nav-app-visible');
+                document.getElementById('bottom-nav')?.classList.remove('nav-app-visible');
+                document.getElementById('sidebar')?.classList.remove('sidebar-visible');
 
+                window.history.replaceState(null, '', '#' + type);
                 const isLogin = type === 'login';
 
                 container.innerHTML = `
@@ -13209,13 +13493,20 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                     <input type="text" name="customRole" id="auth-custom-role" placeholder="Enter Custom Position" class="input-field hidden">
                                 </div>
                                 <input type="text" name="empId" placeholder="Employee Number (Optional)" class="input-field">
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-xs font-bold text-gray-700">Registration Key <span class="text-red-500">*</span></label>
+                                        <button type="button" onclick="App.promptRegistrationKeyInfo()" class="text-[11px] text-brand-600 font-semibold hover:underline">Need a key?</button>
+                                    </div>
+                                    <input type="text" name="registrationKey" placeholder="XXXX-XXXX-XXXX" class="input-field text-sm font-mono tracking-wider uppercase" required>
+                                </div>
                                 ` : ''}
                                 
                                 <input type="email" name="email" placeholder="Email Address" class="input-field" required>
                                 <input type="password" name="password" placeholder="Password" class="input-field" required>
                                 ${!isLogin ? `<input type="password" name="confirmPassword" placeholder="Confirm Password" class="input-field" required>` : ''}
                                 
-                                ${isLogin ? `<div class="flex justify-end"><button type="button" onclick="App.forgotPassword()" class="text-xs font-semibold text-brand-600 hover:text-brand-700">Forgot Password?</button></div>` : ''}
+                                ${isLogin ? `<div class="flex justify-between items-center"><button type="button" onclick="App.router('guest')" class="text-xs font-semibold text-gray-500 hover:text-gray-700">← Browse Bulletin</button><button type="button" onclick="App.forgotPassword()" class="text-xs font-semibold text-brand-600 hover:text-brand-700">Forgot Password?</button></div>` : ''}
 
                                 <button type="submit" id="auth-btn" class="w-full bg-brand-600 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-brand-200 hover:bg-brand-700 hover:shadow-xl transform active:scale-95 transition-all">
                                     ${isLogin ? 'Sign In' : 'Create Account'}
@@ -13232,18 +13523,110 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 `;
             },
 
-            forgotPassword() {
+            promptRegistrationKeyInfo() {
                 const html = `
                     <div class="text-center">
-                        <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-slight">
-                            <i class="ph-fill ph-lock-key-open text-3xl"></i>
+                        <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ph-fill ph-key text-2xl"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Password Recovery</h3>
-                        <p class="text-gray-500 text-sm mb-8 leading-relaxed px-4">To reset your password, please contact the <strong>System Developer</strong> or your <strong>School Principal</strong> directly for verification.</p>
-                        <button onclick="App.closeModal()" class="w-full py-3.5 rounded-xl font-bold bg-brand-600 text-white shadow-lg shadow-brand-200 hover:bg-brand-700 transition-colors">Okay, I understand</button>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Registration Key Required</h3>
+                        <p class="text-gray-600 text-sm mb-6 leading-relaxed px-2">
+                            To ensure system security, account registration requires an active <strong>Registration Key</strong>.<br><br>
+                            Please contact your <strong>School Principal</strong>, <strong>Assistant Principal</strong>, or <strong>System Developer</strong> to request the current registration key.
+                        </p>
+                        <button onclick="App.closeModal()" class="w-full py-3 rounded-xl font-bold bg-brand-600 text-white hover:bg-brand-700 transition-colors">I Understand</button>
                     </div>
                 `;
                 this.openModal(html);
+            },
+
+            forgotPassword() {
+                const html = `
+                    <div class="max-w-md mx-auto">
+                        <div class="text-center mb-6">
+                            <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="ph-fill ph-lock-key text-2xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900">Forgot Password Recovery</h3>
+                            <p class="text-gray-500 text-xs mt-1">Enter your account details and current Registration Key to generate a temporary password.</p>
+                        </div>
+
+                        <form onsubmit="App.handleForgotPasswordSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-700 block mb-1">DepEd Email Address</label>
+                                <input type="email" name="email" placeholder="e.g. juan.delacruz@deped.gov.ph" class="input-field text-sm" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-700 block mb-1">First Name</label>
+                                    <input type="text" name="firstName" placeholder="First Name" class="input-field text-sm" required>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-700 block mb-1">Last Name</label>
+                                    <input type="text" name="lastName" placeholder="Last Name" class="input-field text-sm" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-700 block mb-1">Current Registration Key</label>
+                                <input type="text" name="registrationKey" placeholder="XXXX-XXXX-XXXX" class="input-field text-sm font-mono uppercase tracking-wider" required>
+                                <p class="text-[10px] text-gray-400 mt-1">Obtain the active key from the Principal or System Developer.</p>
+                            </div>
+
+                            <div class="pt-2 flex gap-3">
+                                <button type="button" onclick="App.closeModal()" class="w-1/3 py-3 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+                                <button type="submit" id="fp-submit-btn" class="w-2/3 py-3 rounded-xl font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-md transition-colors text-sm flex items-center justify-center gap-2">
+                                    <i class="ph-bold ph-key"></i> Generate Temp Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                this.openModal(html);
+            },
+
+            async handleForgotPasswordSubmit(e) {
+                e.preventDefault();
+                const btn = document.getElementById('fp-submit-btn');
+                const origText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Verifying...';
+
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData);
+
+                try {
+                    const res = await this.api('forgotPassword', data);
+                    if (res && res.status === 'success' && res.tempPassword) {
+                        const successHtml = `
+                            <div class="text-center py-4">
+                                <div class="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="ph-fill ph-check-circle text-3xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-1">Temporary Password Generated</h3>
+                                <p class="text-gray-500 text-xs mb-6">Use this password to log in, then change it immediately in your Profile.</p>
+                                
+                                <div class="bg-gray-900 text-green-400 p-4 rounded-2xl font-mono text-xl font-bold tracking-widest flex items-center justify-between mb-6 shadow-inner">
+                                    <span id="temp-pw-display">${res.tempPassword}</span>
+                                    <button onclick="navigator.clipboard.writeText('${res.tempPassword}'); App.toast('Copied password!', 'success')" class="text-xs bg-gray-700 hover:bg-gray-600 text-white font-sans font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                        <i class="ph-bold ph-copy"></i> Copy
+                                    </button>
+                                </div>
+
+                                <button onclick="App.closeModal(); App.renderAuth('login');" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-colors text-sm">
+                                    Proceed to Sign In
+                                </button>
+                            </div>
+                        `;
+                        const modalContent = document.getElementById('modal-content');
+                        if (modalContent) modalContent.innerHTML = successHtml;
+                    } else {
+                        this.toast(res.message || 'Verification failed.', 'error');
+                    }
+                } catch (err) {
+                    this.toast(err.message || 'Error executing request.', 'error');
+                } finally {
+                    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                }
             },
 
             async handleAuth(e, type) {
@@ -13323,12 +13706,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 btn.innerText = type === 'login' ? 'Sign In' : 'Create Account';
             },
 
-            logout() {
+            async logout() {
                 this.user = null;
-                localStorage.removeItem(DB_KEY_CURRENT);
-                this.init();
-                this.user = null;
-                this.router('login');
+                await LocalDB.delete('session', DB_KEY_CURRENT);
+                this.router('guest');
                 this.toast('Logged out successfully');
             },
 
@@ -16311,9 +16692,28 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 // --- CHECK FOR EXISTING REPORT BY THIS USER ---
                 const existingReport = this.reports.find(r => r.typeId === typeId && r.userId === this.user.id);
 
-                const processSubmission = () => {
-                    const reader = new FileReader();
-                    reader.onload = async (re) => {
+                const processSubmission = async () => {
+                    const btn = e.target.querySelector('button[type="submit"]');
+                    const originalText = btn ? btn.innerHTML : 'Submit';
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Uploading & Submitting...';
+                    }
+
+                    try {
+                        let fileUrl = '';
+                        // Use chunked upload for file upload safety & progress
+                        if (file.size > 100 * 1024) {
+                            fileUrl = await this.uploadFileChunked(file);
+                        } else {
+                            // Convert small files to base64 inline
+                            fileUrl = await new Promise((res) => {
+                                const r = new FileReader();
+                                r.onload = (re) => res(re.target.result);
+                                r.readAsDataURL(file);
+                            });
+                        }
+
                         const newReport = {
                             id: Date.now(),
                             userId: this.user.id,
@@ -16321,42 +16721,32 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             typeId: typeId,
                             typeLabel: typeDef ? typeDef.label : typeId,
                             metricValue: formData.get('metricValue'),
-                            unit: typeDef.unit || '', // Store unit snapshot
+                            unit: typeDef.unit || '',
                             date: new Date().toISOString(),
                             fileName: file.name,
-                            fileData: re.target.result, // Base64
-                            stats: this.tempStats || {} // Attach calculated stats
+                            fileUrl: fileUrl.startsWith('data:') ? '' : fileUrl,
+                            fileData: fileUrl.startsWith('data:') ? fileUrl : '',
+                            stats: this.tempStats || {}
                         };
 
-                        const btn = e.target.querySelector('button[type="submit"]');
-                        const originalText = btn.innerHTML;
+                        if (existingReport) {
+                            await this.api('deleteReport', { id: existingReport.id });
+                            this.reports = this.reports.filter(r => r.id !== existingReport.id);
+                        }
+                        await this.api('submitReport', newReport);
+                        this.reports.push(newReport);
+                        this.lastReportTime = Date.now();
+                        this.toast('Report Submitted Successfully!');
+                        this.closeModal();
+                        this.renderReports(document.getElementById('main-view'));
+                    } catch (err) {
+                        this.toast('Submission failed: ' + err.message, 'error');
+                    } finally {
                         if (btn) {
-                            btn.disabled = true;
-                            btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Submitting...';
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
                         }
-
-                        try {
-                            if (existingReport) {
-                                // OVERWRITE: Remove the old one remotely and locally
-                                await this.api('deleteReport', { id: existingReport.id });
-                                this.reports = this.reports.filter(r => r.id !== existingReport.id);
-                            }
-                            await this.api('submitReport', newReport);
-                            this.reports.push(newReport); // Optimistic (without fileUrl)
-                            this.lastReportTime = Date.now();
-                            this.toast('Report Submitted!');
-                            this.closeModal();
-                            this.renderReports(document.getElementById('main-view'));
-                        } catch (err) {
-                            this.toast('Submission failed: ' + err.message, 'error');
-                        } finally {
-                            if (btn) {
-                                btn.disabled = false;
-                                btn.innerHTML = originalText;
-                            }
-                        }
-                    };
-                    reader.readAsDataURL(file);
+                    }
                 };
 
                 if (existingReport) {
@@ -16408,20 +16798,29 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     manageToolsHtml = `
                         <div class="bg-gray-900 text-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-gray-800">
                             <div class="p-5 border-b border-gray-700 flex justify-between items-center"><h3 class="font-bold flex items-center gap-2"><i class="ph-fill ph-crown text-xl text-${toolColor}-400"></i> ${toolTitle}</h3><span class="bg-${toolColor}-500/20 text-${toolColor}-400 text-[10px] font-bold px-2 py-1 rounded">ACTIVE</span></div>
-                            <div class="p-5 border-b border-gray-700 bg-gray-800/50">
-                                <button onclick="App.openUserManager()" class="w-full bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 transition-colors"><i class="ph-bold ph-users-three"></i> Open User Manager</button>
-                                ${this.isDev() ? `<h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 mt-6">Database Management</h4>
-                                <div class="grid md:grid-cols-2 gap-4 mb-6">
-                                    <div class="space-y-1">
-                                        <label class="text-xs font-medium text-gray-400">Manual Full Backup</label>
-                                        <button onclick="App.devArchiveDatabase(this)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center shadow-lg transition-colors"><i class="ph-bold ph-archive"></i> Archive Database to CSV</button>
-                                        <p class="text-[10px] text-gray-500 text-center mt-1">Saves all sheets to Google Drive</p>
+                            <div class="p-5 border-b border-gray-700 bg-gray-800/50 space-y-4">
+                                <div class="grid md:grid-cols-2 gap-3">
+                                    <button onclick="App.openUserManager()" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors text-sm"><i class="ph-bold ph-users-three"></i> User Manager</button>
+                                    <button onclick="App.openKeyManager()" class="bg-amber-600 hover:bg-amber-500 text-white p-3 rounded-xl flex items-center justify-center gap-2 font-bold transition-colors text-sm shadow-md"><i class="ph-bold ph-key"></i> Registration Keys</button>
+                                </div>
+                                ${this.isDev() ? `
+                                <div class="pt-4 border-t border-gray-700">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Database & System Audit</h4>
+                                        <button onclick="App.openLogViewer()" class="text-xs bg-brand-600 hover:bg-brand-500 text-white font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"><i class="ph-bold ph-clipboard-text"></i> Audit Logs</button>
                                     </div>
-                                    <div class="space-y-1">
-                                        <label class="text-xs font-medium text-gray-400">Restore Data</label>
-                                        <button onclick="document.getElementById('dev-archive-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center border border-gray-600 transition-colors"><i class="ph-bold ph-upload-simple"></i> Upload Archive</button>
-                                        <input type="file" id="dev-archive-upload" class="hidden" accept=".csv, .xlsx, .zip" onchange="App.devHandleArchiveUpload(this)">
-                                        <p class="text-[10px] text-gray-500 text-center mt-1">Requires Developer confirmation</p>
+                                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-medium text-gray-400">Manual Full Backup</label>
+                                            <button onclick="App.devArchiveDatabase(this)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center shadow-lg transition-colors"><i class="ph-bold ph-archive"></i> Archive Database to CSV</button>
+                                            <p class="text-[10px] text-gray-500 text-center mt-1">Saves all sheets to Google Drive</p>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-xs font-medium text-gray-400">Restore Sheet from CSV</label>
+                                            <button onclick="document.getElementById('dev-archive-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2 w-full justify-center border border-gray-600 transition-colors"><i class="ph-bold ph-upload-simple"></i> Restore CSV Data</button>
+                                            <input type="file" id="dev-archive-upload" class="hidden" accept=".csv" onchange="App.devHandleArchiveUpload(this)">
+                                            <p class="text-[10px] text-gray-500 text-center mt-1">Overwrites targeted table rows</p>
+                                        </div>
                                     </div>
                                 </div>
                                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-t border-gray-700 pt-6">System Identity</h4><div class="grid md:grid-cols-2 gap-4"><div class="space-y-1 col-span-2 md:col-span-1"><label class="text-xs font-medium text-gray-400">App Name</label><div class="flex gap-2"><input type="text" id="dev-app-name" value="${this.settings.appName}" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:border-green-500 outline-none transition-colors"><button onclick="App.devUpdateAppName()" class="bg-green-600 hover:bg-green-500 px-3 rounded-lg text-xs font-bold transition-colors">SAVE</button></div></div><div class="space-y-1 col-span-2 md:col-span-1"><div class="flex flex-col justify-center bg-gray-900 p-3 rounded-lg border border-gray-600 h-full"><div class="flex justify-between items-center mb-2"><span class="text-sm">Content Opacity</span><span class="text-xs font-bold text-green-400" id="opacity-val">${Math.round(this.settings.bgOpacity * 100)}%</span></div><input type="range" min="0.1" max="1" step="0.05" value="${this.settings.bgOpacity}" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="App.devUpdateOpacity(this.value)"></div></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Logo</label><button onclick="document.getElementById('dev-logo-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-upload-simple"></i> Upload New Icon</button><input type="file" id="dev-logo-upload" class="hidden" accept="image/*" onchange="App.devHandleLogoSelect(this)"></div><div class="space-y-1"><label class="text-xs font-medium text-gray-400">App Background</label><button onclick="document.getElementById('dev-bg-upload').click()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 w-full justify-center border border-gray-600"><i class="ph-bold ph-image"></i> Upload Wallpaper</button><input type="file" id="dev-bg-upload" class="hidden" accept="image/*" onchange="App.devHandleBackgroundSelect(this)"></div></div>` : ''}
@@ -16756,11 +17155,333 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             devHandleArchiveUpload(input) {
                 if (input.files && input.files.length > 0) {
                     const file = input.files[0];
-                    this.askConfirm("Restore Archive Data?", `You selected '${file.name}'. WARNING: Re-importing raw CSV/Database records requires a precise backend schema match and can overwrite live data. Continue simulation?`, () => {
-                        this.toast("Upload Simulation Complete. Data restoration logic not fully wired for production safety yet.", "warning");
-                        input.value = ''; // Reset input
-                    });
+                    if (!file.name.toLowerCase().endsWith('.csv')) {
+                        this.toast('Please select a valid CSV database backup file.', 'error');
+                        input.value = '';
+                        return;
+                    }
+
+                    const sheetsList = ['Users', 'Posts', 'Groups', 'Reports', 'ReportTypes', 'Settings', 'RegistrationKeys'];
+                    const sheetOptions = sheetsList.map(s => `<option value="${s}">${s}</option>`).join('');
+
+                    const html = `
+                        <div class="max-w-md mx-auto text-left">
+                            <h3 class="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                <i class="ph-fill ph-database text-indigo-600"></i> Restore Sheet Data
+                            </h3>
+                            <p class="text-xs text-gray-500 mb-4">Select the target database table to overwrite with CSV file <strong>${file.name}</strong> (${Math.round(file.size / 1024)} KB).</p>
+                            
+                            <div class="space-y-4 mb-6">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-700 block mb-1">Target Table</label>
+                                    <select id="restore-target-sheet" class="input-field text-sm">
+                                        ${sheetOptions}
+                                    </select>
+                                </div>
+                                <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 rounded-xl flex gap-2">
+                                    <i class="ph-fill ph-warning text-base flex-shrink-0"></i>
+                                    <span><strong>Warning:</strong> Restoring will replace existing data in the target table with the contents of this CSV.</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button onclick="App.closeModal()" class="w-1/3 py-2.5 rounded-xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm">Cancel</button>
+                                <button onclick="App.executeCSVRestore('${file.name}')" id="confirm-restore-btn" class="w-2/3 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white text-sm shadow-md">Execute Restore</button>
+                            </div>
+                        </div>
+                    `;
+                    this.pendingRestoreFile = file;
+                    this.openModal(html);
                 }
+            },
+
+            async executeCSVRestore(filename) {
+                if (!this.pendingRestoreFile) return;
+                const file = this.pendingRestoreFile;
+                const targetSheet = document.getElementById('restore-target-sheet').value;
+                const btn = document.getElementById('confirm-restore-btn');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Restoring...'; }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const csvContent = e.target.result;
+                    try {
+                        const res = await this.api('restoreFromCSV', { sheetName: targetSheet, csvContent: csvContent });
+                        if (res && res.status === 'success') {
+                            this.toast(`Sheet "${targetSheet}" restored successfully! (${res.rowsRestored} rows written)`, 'success');
+                            this.closeModal();
+                            this.refreshData();
+                        } else {
+                            this.toast(res.message || 'Restore failed.', 'error');
+                        }
+                    } catch (err) {
+                        this.toast('Restore failed: ' + err.message, 'error');
+                    } finally {
+                        if (btn) btn.disabled = false;
+                        this.pendingRestoreFile = null;
+                        const fileInput = document.getElementById('dev-archive-upload');
+                        if (fileInput) fileInput.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            async openKeyManager() {
+                this.showLoader(true);
+                try {
+                    const res = await this.api('getRegistrationKeys');
+                    const keys = (res && res.keys) ? res.keys : [];
+                    const activeKey = keys.find(k => k.status === 'active');
+
+                    const html = `
+                        <div class="max-w-2xl mx-auto text-left">
+                            <div class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <i class="ph-fill ph-key text-amber-500"></i> Registration Key Management
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-0.5">Control registration access for faculty and staff</p>
+                                </div>
+                                <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                            </div>
+
+                            <!-- ACTIVE KEY CARD -->
+                            <div class="bg-gray-900 text-white p-6 rounded-2xl mb-6 shadow-xl relative overflow-hidden">
+                                <div class="flex justify-between items-start mb-4">
+                                    <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Current Active Key</span>
+                                    ${activeKey ? `<span class="bg-green-500/20 text-green-400 border border-green-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full">ACTIVE</span>` : `<span class="bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full font-mono">NO ACTIVE KEY</span>`}
+                                </div>
+
+                                ${activeKey ? `
+                                    <div class="flex items-center justify-between bg-gray-800/80 p-4 rounded-xl border border-gray-700 font-mono text-2xl font-bold tracking-widest text-white mb-4">
+                                        <span id="active-key-text">${activeKey.key}</span>
+                                        <button onclick="navigator.clipboard.writeText('${activeKey.key}'); App.toast('Key copied!', 'success')" class="text-xs bg-amber-500 hover:bg-amber-600 font-sans font-bold text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                            <i class="ph-bold ph-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <div class="text-xs text-gray-400 flex flex-wrap justify-between gap-2">
+                                        <span>Generated by: <strong>${activeKey.generatedByName}</strong></span>
+                                        <span>Expires: <strong>${new Date(activeKey.expiresAt).toLocaleDateString()}</strong></span>
+                                    </div>
+                                ` : `
+                                    <p class="text-sm text-gray-400 mb-4">No active key. New user registrations are currently blocked.</p>
+                                `}
+
+                                <div class="mt-6 pt-4 border-t border-gray-800 flex gap-3">
+                                    <button onclick="App.handleGenerateKey()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2">
+                                        <i class="ph-bold ph-arrows-clockwise"></i> Generate New Key
+                                    </button>
+                                    ${activeKey ? `
+                                        <button onclick="App.handleRevokeKey()" class="bg-red-600/80 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-1.5">
+                                            <i class="ph-bold ph-trash"></i> Revoke
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- KEY HISTORY -->
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Key History Log</h4>
+                            <div class="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scroll">
+                                ${keys.length === 0 ? `<p class="text-xs text-gray-400 py-4 text-center">No key history recorded yet.</p>` : keys.map(k => `
+                                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center text-xs">
+                                        <div>
+                                            <span class="font-mono font-bold text-gray-800 text-sm block">${k.key}</span>
+                                            <span class="text-gray-400 text-[10px]">By ${k.generatedByName} • ${new Date(k.generatedAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${k.status === 'active' ? 'bg-green-100 text-green-700' : k.status === 'revoked' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'}">${String(k.status).toUpperCase()}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                    this.openModal(html);
+                } catch (e) {
+                    this.toast('Failed to load key management.', 'error');
+                } finally {
+                    this.showLoader(false);
+                }
+            },
+
+            async handleGenerateKey() {
+                this.askConfirm("Generate New Registration Key?", "Generating a new key will supersede and invalidate the current registration key. Continue?", async () => {
+                    this.showLoader(true);
+                    try {
+                        const res = await this.api('generateRegistrationKey');
+                        if (res && res.status === 'success') {
+                            this.toast(`New key generated: ${res.key}`, 'success');
+                            this.openKeyManager();
+                        } else {
+                            this.toast(res.message || 'Key generation failed.', 'error');
+                        }
+                    } catch (e) {
+                        this.toast('Key generation error.', 'error');
+                    } finally {
+                        this.showLoader(false);
+                    }
+                });
+            },
+
+            async handleRevokeKey() {
+                this.askConfirm("Revoke Active Registration Key?", "Revoking the active key will immediately block all new registrations until a new key is generated. Proceed?", async () => {
+                    this.showLoader(true);
+                    try {
+                        const res = await this.api('revokeRegistrationKey');
+                        if (res && res.status === 'success') {
+                            this.toast('Active key revoked.', 'info');
+                            this.openKeyManager();
+                        } else {
+                            this.toast(res.message || 'Revocation failed.', 'error');
+                        }
+                    } catch (e) {
+                        this.toast('Revoke error.', 'error');
+                    } finally {
+                        this.showLoader(false);
+                    }
+                });
+            },
+
+            async openLogViewer() {
+                this.showLoader(true);
+                try {
+                    const res = await this.api('getLogs');
+                    const logs = (res && res.logs) ? res.logs : [];
+
+                    const html = `
+                        <div class="max-w-4xl mx-auto text-left h-[80vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <i class="ph-fill ph-clipboard-text text-brand-600"></i> Transaction Audit Logs
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-0.5">Recorded official operations & system events (${logs.length} entries)</p>
+                                </div>
+                                <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                            </div>
+
+                            <input type="text" placeholder="Filter logs by action, user, or details..." class="input-field text-sm mb-4 flex-shrink-0" onkeyup="const v=this.value.toLowerCase(); document.querySelectorAll('.log-row').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(v)?'table-row':'none')">
+
+                            <div class="flex-1 overflow-y-auto custom-scroll border border-gray-200 rounded-2xl bg-white shadow-inner">
+                                <table class="w-full text-xs text-left">
+                                    <thead class="bg-gray-900 text-white sticky top-0 font-bold uppercase tracking-wider text-[10px]">
+                                        <tr>
+                                            <th class="p-3">Timestamp</th>
+                                            <th class="p-3">User</th>
+                                            <th class="p-3">Role</th>
+                                            <th class="p-3">Action</th>
+                                            <th class="p-3">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        ${logs.length === 0 ? `<tr><td colspan="5" class="p-8 text-center text-gray-400 font-medium">No transaction logs recorded yet.</td></tr>` : logs.map(l => `
+                                            <tr class="log-row hover:bg-gray-50 transition-colors">
+                                                <td class="p-3 text-gray-400 font-mono whitespace-nowrap">${l.timestamp ? new Date(l.timestamp).toLocaleString() : '-'}</td>
+                                                <td class="p-3 font-bold text-gray-900 whitespace-nowrap">${l.userName || 'System'}</td>
+                                                <td class="p-3"><span class="px-2 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-700">${l.userRole || 'System'}</span></td>
+                                                <td class="p-3 font-bold text-brand-600 font-mono text-[11px] whitespace-nowrap">${l.action}</td>
+                                                <td class="p-3 text-gray-600 max-w-xs truncate">${l.details || '-'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    this.openModal(html);
+                } catch (e) {
+                    this.toast('Failed to load transaction logs.', 'error');
+                } finally {
+                    this.showLoader(false);
+                }
+            },
+
+            async uploadFileChunked(file, onProgress) {
+                const CHUNK_SIZE = 150 * 1024;
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                const uploadId = 'UPL-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+                this.showUploadProgress(0, file.name);
+
+                for (let i = 0; i < totalChunks; i++) {
+                    const start = i * CHUNK_SIZE;
+                    const end = Math.min(file.size, start + CHUNK_SIZE);
+                    const chunkBlob = file.slice(start, end);
+
+                    const base64Chunk = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(chunkBlob);
+                    });
+
+                    let attempts = 0;
+                    let success = false;
+                    let lastRes = null;
+
+                    while (attempts < 3 && !success) {
+                        try {
+                            attempts++;
+                            lastRes = await this.api('uploadChunk', {
+                                uploadId: uploadId,
+                                chunkIndex: i,
+                                totalChunks: totalChunks,
+                                chunkData: base64Chunk,
+                                fileName: file.name,
+                                mimeType: file.type
+                            });
+                            if (lastRes && lastRes.status === 'success') {
+                                success = true;
+                            }
+                        } catch (e) {
+                            console.warn(`Chunk ${i} attempt ${attempts} failed`, e);
+                            await new Promise(r => setTimeout(r, 1000 * attempts));
+                        }
+                    }
+
+                    if (!success) {
+                        this.hideUploadProgress();
+                        throw new Error(`Upload failed at chunk ${i + 1} of ${totalChunks}. Check internet connection and retry.`);
+                    }
+
+                    const pct = Math.round(((i + 1) / totalChunks) * 100);
+                    this.showUploadProgress(pct, file.name);
+                    if (onProgress) onProgress(pct);
+
+                    if (lastRes && lastRes.assembled) {
+                        this.hideUploadProgress();
+                        return lastRes.fileUrl;
+                    }
+                }
+                this.hideUploadProgress();
+                throw new Error('Upload assembly failed.');
+            },
+
+            showUploadProgress(percent, filename) {
+                let overlay = document.getElementById('upload-progress-overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'upload-progress-overlay';
+                    overlay.className = 'fixed bottom-6 right-6 bg-gray-900 text-white p-5 rounded-2xl shadow-2xl z-[100] w-80 border border-gray-800 animate-fade-in';
+                    document.body.appendChild(overlay);
+                }
+                overlay.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-white">
+                            <i class="ph-bold ph-upload-simple animate-bounce-slight"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold truncate">${filename}</p>
+                            <p class="text-[10px] text-gray-400">Persistent Uploading...</p>
+                        </div>
+                        <span class="text-xs font-mono font-bold text-brand-400">${percent}%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-brand-500 h-full transition-all duration-300 rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                `;
+            },
+
+            hideUploadProgress() {
+                const overlay = document.getElementById('upload-progress-overlay');
+                if (overlay) overlay.remove();
             },
 
             devUpdateAppName() {
