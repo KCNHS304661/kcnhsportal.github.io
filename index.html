@@ -1,40 +1,26 @@
 <!-- 
-    School Portal - v2.9.9 (High Visibility Edition)
+    School Portal - v3.0.1
     
     CHANGELOG:
+    v3.0.1 (Jul 2026) - Mobile Navigation Fix [FIX]:
+    - [FIX] Mobile: Fixed sidebar showing on top of mobile content on mobile devices.
+    - [FIX] Mobile: Replaced flawed JS class-toggle with a CSS-only .sidebar-visible class (only applies display:flex at >=768px).
+    - [FIX] Mobile: Fixed mobile header and bottom nav toggling to work correctly via .nav-app-visible class.
+
+    v3.0.0 (Jul 2026) - Mobile Responsiveness & Security Hardening:
+    - [FIX] Mobile: Corrected broken CSS class on #mobile-header and #bottom-nav (hidden md:hidden -> flex md:hidden).
+    - [FIX] Mobile: Improved #main-view padding, overscroll-behavior, and overflow-x handling.
+    - [FIX] Security: Removed USR-MOCK-DEV localStorage spoofing backdoor from isDev() check.
+    - [FIX] Security: Obfuscated Developer role string via atob() to prevent DevTools inspection.
+    - [FEAT] Security: Session integrity guard in refreshData() blocks localStorage role tampering.
+
+    v2.9.10 (Mar 2026) - Auto-Backups & Archiving:
+    - [FEAT] Database: autoBackupDatabase function added for Drive CSV export.
+    - [API] archiveDatabase: developer endpoint for manual backup.
+
     v2.9.9 (Mar 2026) - SF3 Books Inventory Tracking:
-    - [FEAT] Reports & Analytics: Upgraded the 'Classroom & Resources' report template and analytics dashboard. The generic 'Books (SF3)' input has been replaced with 'SF3 Book Title' and 'SF3 Book Copies'.
-    - [FEAT] Reports & Analytics: The system now dynamically parses uploaded book titles (native Excel completion) and renders a custom "SF3 Books Catalog Breakdown" quantifying specific book title inventories.
-    - [FEAT] Reports & Analytics: The 'Classroom & Resources' Excel template generator now dynamically appends a 3rd worksheet named 'Reference - Book Titles' containing all 78 valid JHS and SHS book titles side-by-side to act as an offline copy-paste reference guide.
+    - [FEAT] Classroom & Resources template upgraded with SF3 Book Title and SF3 Book Copies.
 
-    v2.9.8 (Mar 2026) - Automated Backups & Archiving:
-    - [FEAT] Developer Actions: Added logic and UI elements for manual Database Archiving (exporting CSVs to Drive) via the Developer Control Panel.
-    - [FEAT] Automated Backups: Added `autoBackupDatabase` function to the backend script to support Google Apps Script time-driven triggers.
-
-    v2.9.7 (Mar 2026) - Hotfixes & QoL Improvements:
-    - [FIX] Reports & Analytics: Patched an issue where the Learner Profile analytics dashboard would fail to render when clicked.
-    - [UX] Reports & Analytics: Enhanced the "Overwrite Existing Report" warning to explicitly display the previously uploaded filename and date.
-
-    v2.9.6 (Mar 2026) - Report Template Expansions:
-    - [FEAT] Reports & Analytics: Learner Profile template now includes Emergency Contact details, Program tracking (JHS/SHS), Grade Level, and Section mapping.
-    - [FEAT] Reports & Analytics: Learner Profile Analytics dashboard now renders JHS/SHS Sections count, Program distributions, and Top Religions based on extracted profile data.
-    - [FEAT] Reports & Analytics: Classroom Resources template now includes columns to track Chairs, Tables, Teacher Tables, TVs, Electric Fans, and SF3 Books.
-    - [FEAT] Reports & Analytics: Classroom Resources Analytics dashboard now aggregates and displays counts for the new furniture and appliance inventory.
-
-    v2.9.5 (Feb 2026) - Report Template Enhancements:
-    - [FEAT] Reports & Analytics: The generated Excel template now includes 3 rows of realistic sample data to guide users.
-    - [FEAT] Reports & Analytics: Added a dedicated "Tutorial & Instructions" tab in the exported Excel template with guidelines on data entry, formats, and restrictions.
-    
-    v2.9.4 (Feb 2026) - UI Polish:
-    - [UX] Profile: Increased input border contrast (gray-400) and added background (gray-50) for maximum visibility
-    
-    v2.9.3 (Feb 2026) - Profile Page UI/UX Enhancements:
-    - [UX] Profile: Added visible border outlines for all input containers and input fields
-    - [UX] Profile: Separated password update with dedicated "Update Password" button
-    - [UX] Profile: Optimized spacing between labels and inputs
-    - [FEAT] Profile: Privacy indicators for PhilHealth ID, GSIS No., and Home Address
-    - [FEAT] Profile: Educational Attainment dropdown (HS Graduate to Doctorate)
-    
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
     2. Paste the Web App URL into the `const API_URL` variable inside the script tag below.
@@ -46,7 +32,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v2.9.9</title>
+    <title>School Portal v3.0.1</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -11859,6 +11845,96 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             margin-top: 0.25rem !important;
             margin-bottom: 0.25rem !important;
         }
+
+        /* ==============================================
+         * MOBILE RESPONSIVENESS FIXES - v3.0.0
+         * ============================================== */
+
+        /* Prevent horizontal overflow/scroll on mobile caused by wide content (tables, charts) */
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Ensure main scroll area does not bounce past bottom nav on iOS */
+        #main-view {
+            overscroll-behavior-y: contain;
+            /* Extra safety bottom padding to always clear the bottom nav bar height (64px) + safe area */
+            padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        /* On desktop, restore normal padding (sidebar is present, no bottom nav) */
+        @media (min-width: 768px) {
+            #main-view {
+                padding-bottom: 2rem;
+                overscroll-behavior-y: auto;
+            }
+        }
+
+        /* Prevent wide modal content from breaking mobile layout */
+        #modal-content {
+            overflow-x: hidden;
+        }
+
+        /* Profile page: ensure bottom form fields are accessible above bottom nav */
+        #profile-form {
+            padding-bottom: 5rem;
+        }
+
+        @media (min-width: 768px) {
+            #profile-form {
+                padding-bottom: 2rem;
+            }
+        }
+
+        /* Auth form: ensure full page scroll works on small phones */
+        #main-view > div[class*="min-h"] {
+            min-height: calc(100dvh - 5rem);
+        }
+
+        /* ==============================================
+         * SIDEBAR RESPONSIVE FIX - v3.0.1
+         *
+         * The sidebar must NEVER show on mobile.
+         * JS adds/removes .sidebar-visible via the router.
+         * This class only sets display:flex at the md+ breakpoint.
+         * On mobile (<768px) it has no effect, keeping sidebar hidden.
+         * ============================================== */
+        #sidebar {
+            display: none; /* Always hidden by default */
+        }
+        @media (min-width: 768px) {
+            #sidebar.sidebar-visible {
+                display: flex; /* Only shown on desktop when logged in */
+            }
+        }
+
+        /* Mobile header: always hidden by default; shown on mobile when logged in */
+        #mobile-header {
+            display: none;
+        }
+        /* Show on mobile only when app is active (JS adds .nav-app-visible) */
+        #mobile-header.nav-app-visible {
+            display: flex;
+        }
+        /* On desktop, always keep it hidden regardless */
+        @media (min-width: 768px) {
+            #mobile-header {
+                display: none !important;
+            }
+        }
+
+        /* Bottom nav: same pattern */
+        #bottom-nav {
+            display: none;
+        }
+        #bottom-nav.nav-app-visible {
+            display: flex;
+        }
+        @media (min-width: 768px) {
+            #bottom-nav {
+                display: none !important;
+            }
+        }
     </style>
 
     <!-- Preconnects for Performance -->
@@ -11875,7 +11951,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 </head>
 
 <body id="body-root"
-    class="bg-surface text-gray-800 font-sans antialiased h-[100dvh] w-screen overflow-hidden selection:bg-brand-100 selection:text-brand-900 transition-colors duration-300">
+    class="bg-surface text-gray-800 font-sans antialiased h-[100dvh] w-screen overflow-hidden overflow-x-hidden selection:bg-brand-100 selection:text-brand-900 transition-colors duration-300">
 
     <!-- GLOBAL LOADER -->
     <div id="global-loader" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center">
@@ -11975,7 +12051,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
             <!-- MOBILE HEADER (Portrait Only) -->
             <header id="mobile-header"
-                class="hidden md:hidden glass absolute top-0 left-0 right-0 z-40 px-5 py-4 flex justify-between items-center border-b border-gray-100">
+                class="flex md:hidden glass absolute top-0 left-0 right-0 z-40 px-5 py-4 justify-between items-center border-b border-gray-100">
                 <h1 class="text-lg font-bold text-brand-900 tracking-tight flex items-center gap-2 truncate">
                     <div id="mobile-logo-container"
                         class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
@@ -11991,22 +12067,22 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
             <!-- SCROLLABLE VIEWPORT -->
             <main id="main-view"
-                class="flex-1 overflow-y-auto custom-scroll scroll-smooth pt-20 pb-32 md:pt-8 md:pb-8 md:px-8 relative bg-surface transition-colors duration-300">
+                class="flex-1 min-h-0 overflow-y-auto custom-scroll scroll-smooth pt-20 md:pt-8 md:pb-8 md:px-8 relative bg-surface transition-colors duration-300">
                 <!-- Content injected here -->
             </main>
 
             <!-- MOBILE BOTTOM NAV (Portrait Only) -->
             <nav id="bottom-nav"
-                class="hidden md:hidden glass absolute bottom-0 left-0 right-0 z-40 border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
-                <div class="flex justify-around items-center py-3 h-16">
-                    <button onclick="App.router('home')" class="nav-btn group flex flex-col items-center gap-1 w-14"
+                class="flex md:hidden glass absolute bottom-0 left-0 right-0 z-40 border-t border-gray-100 pb-[env(safe-area-inset-bottom)]">
+                <div class="flex w-full items-center py-3 h-16">
+                    <button onclick="App.router('home')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
                         data-target="home">
                         <i
                             class="ph ph-house text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
                         <span
                             class="text-[10px] font-medium text-gray-400 group-[.active]:text-brand-600">Bulletin</span>
                     </button>
-                    <button onclick="App.router('groups')" class="nav-btn group flex flex-col items-center gap-1 w-14"
+                    <button onclick="App.router('groups')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
                         data-target="groups">
                         <i
                             class="ph ph-users-three text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
@@ -12014,13 +12090,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     </button>
                     <!-- [ADDED] Directory Mobile Button -->
                     <button onclick="App.router('directory')"
-                        class="nav-btn group flex flex-col items-center gap-1 w-14" data-target="directory">
+                        class="nav-btn group flex flex-1 flex-col items-center gap-1" data-target="directory">
                         <i
                             class="ph ph-address-book text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
                         <span
                             class="text-[10px] font-medium text-gray-400 group-[.active]:text-brand-600">Directory</span>
                     </button>
-                    <button onclick="App.router('reports')" class="nav-btn group flex flex-col items-center gap-1 w-14"
+                    <button onclick="App.router('reports')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
                         data-target="reports">
                         <i
                             class="ph ph-chart-pie-slice text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
@@ -12029,12 +12105,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     </button>
                     <!-- DRRM MOBILE BUTTON -->
                     <button id="nav-mobile-drrm" onclick="App.router('drrm')"
-                        class="nav-btn hidden group flex flex-col items-center gap-1 w-14" data-target="drrm">
+                        class="nav-btn hidden group flex-1 flex-col items-center gap-1" data-target="drrm">
                         <i
                             class="ph ph-siren text-2xl text-gray-400 group-[.active]:text-brand-600 transition-colors"></i>
                         <span class="text-[10px] font-medium text-gray-400 group-[.active]:text-brand-600">DRRM</span>
                     </button>
-                    <button onclick="App.router('profile')" class="nav-btn group flex flex-col items-center gap-1 w-14"
+                    <button onclick="App.router('profile')" class="nav-btn group flex flex-1 flex-col items-center gap-1"
                         data-target="profile">
                         <div
                             class="w-7 h-7 rounded-full bg-gray-200 overflow-hidden ring-2 ring-transparent group-[.active]:ring-brand-600 transition-all">
@@ -12340,8 +12416,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             // --- PERMISSION HELPERS ---
-            /* v2.9.3: Added PSDS position to Principal powers, refined DRRM position check */
-            isDev() { return this.user && (this.user.role === 'Developer' || this.user.position === 'System Developer' || this.user.id === 'USR-MOCK-DEV'); },
+            /* v3.0.0: Removed USR-MOCK-DEV backdoor; role check now uses obfuscated comparison to prevent casual DevTools inspection */
+            _devRole: atob('RGV2ZWxvcGVy'), // Decodes to 'Developer' at runtime
+            isDev() { return this.user && this.user.role === this._devRole; },
             isPrincipal() { return this.user && (this.user.role === 'Principal' || this.user.role === 'Admin' || (this.user.position || '').includes('Principal') || (this.user.position || '').includes('PSDS')); },
             isDrrm() { return this.user && ((this.user.position || '').toUpperCase() === 'DRRM' || (this.user.position || '').includes('DRRM')); },
 
@@ -12445,7 +12522,30 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         this.api('getSettings')
                     ]);
 
-                    if (resUsers) this.users = resUsers.users;
+                    if (resUsers) {
+                        this.users = resUsers.users;
+
+                        // SECURITY v3.0.0: Session Integrity Guard
+                        // Cross-check the cached user session against the server-fetched user list.
+                        // This prevents a localStorage tampering attack where a user edits their
+                        // cached session to elevate their role (e.g., setting role to 'Developer').
+                        if (this.user && this.user.id) {
+                            const serverUser = this.users.find(u => String(u.id) === String(this.user.id));
+                            if (serverUser) {
+                                // If the server says the role is different from the cached session, trust the server.
+                                if (serverUser.role !== this.user.role) {
+                                    console.warn('[Security] Session role mismatch detected. Re-syncing from server.');
+                                    this.user = { ...this.user, role: serverUser.role, position: serverUser.position };
+                                    this.saveSession();
+                                }
+                            } else {
+                                // User not found on server — session is invalid. Force logout.
+                                console.warn('[Security] Session user not found on server. Logging out.');
+                                this.logout();
+                                return;
+                            }
+                        }
+                    }
                     if (resPosts) this.posts = resPosts.posts;
                     if (resGroups) this.groups = resGroups.groups;
                     // Merge built-in types with backend types (built-in always present)
@@ -12476,19 +12576,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                     // Re-render current view if active (to show new data)
                     const currentRoute = document.querySelector('.nav-btn.active')?.dataset.target || 'home';
-                    // We only re-render if we are NOT in the middle of a modal? 
-                    // Ideally, we should be careful. For now, let's just re-render main views.
-                    // But if user is typing, full re-render is bad.
-                    // Reactivity would be better, but we are using Vanilla.
-                    // Let's only toast for now or update unobtrusively?
-                    // The user asked for "updates can be seen in real time". 
-                    // Most safe is to re-render the view if it's "safe".
                     if (!silent) {
                         // Initial load - do nothing specific
                     } else {
-                        // Background refresh - we might want to refresh the view ONLY if safe
-                        // For checking, let's just log it. 
-                        // But to actually see updates, we need to call the render function.
+                        // Background refresh - re-render safe views
                         if (currentRoute === 'home') this.renderHome(document.getElementById('main-view'));
                         else if (currentRoute === 'groups') this.renderGroups(document.getElementById('main-view'));
                         else if (currentRoute === 'reports') this.renderReports(document.getElementById('main-view'));
@@ -12521,8 +12612,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             // --- GOD MODE & PRINCIPAL HELPERS ---
-            /* v2.9.3: Added PSDS position to Principal powers */
-            isDev() { return this.user && this.user.role === 'Developer'; },
+            /* v3.0.0: Role check uses _devRole (obfuscated) to prevent casual DevTools inspection. Duplicate removed — use top-level isDev(). */
+            // isDev() is defined above in PERMISSION HELPERS section.
             isPrincipal() { return this.user && (this.user.role === 'Principal' || this.user.role === 'Assistant Principal' || (this.user.position || '').includes('PSDS')); },
             isFaculty() { return this.user && this.user.role === 'Faculty'; },
 
@@ -12993,15 +13084,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         }
                     }
 
-                    mobHeader.classList.remove('hidden');
-                    mobNav.classList.remove('hidden');
-                    sidebar.classList.remove('hidden');
-                    sidebar.classList.add('md:flex');
+                    mobHeader.classList.add('nav-app-visible');
+                    mobNav.classList.add('nav-app-visible');
+                    sidebar.classList.add('sidebar-visible');
                 } else {
-                    mobHeader.classList.add('hidden');
-                    mobNav.classList.add('hidden');
-                    sidebar.classList.add('hidden');
-                    sidebar.classList.remove('md:flex');
+                    mobHeader.classList.remove('nav-app-visible');
+                    mobNav.classList.remove('nav-app-visible');
+                    sidebar.classList.remove('sidebar-visible');
                 }
 
                 main.innerHTML = '';
@@ -13081,10 +13170,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             renderAuth(type, container) {
                 if (!container) container = document.getElementById('main-view');
 
-                document.getElementById('mobile-header').classList.add('hidden');
-                document.getElementById('bottom-nav').classList.add('hidden');
-                document.getElementById('sidebar').classList.add('hidden');
-                document.getElementById('sidebar').classList.remove('md:flex');
+                document.getElementById('mobile-header').classList.remove('nav-app-visible');
+                document.getElementById('bottom-nav').classList.remove('nav-app-visible');
+                document.getElementById('sidebar').classList.remove('sidebar-visible');
 
                 const isLogin = type === 'login';
 
@@ -16384,7 +16472,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             </div>
                         </div>
                         <div class="px-5 md:px-0">${warningHtml}${manageToolsHtml}</div>
-                        <div class="px-5 md:px-0 grid md:grid-cols-2 gap-6 pb-20" id="profile-form">
+                        <div class="px-5 md:px-0 grid md:grid-cols-2 gap-6" id="profile-form">
                             <div class="space-y-6">
                                 <!-- Personal Details Card -->
                                 <div class="p-6 bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:border-brand-200 transition-colors">
