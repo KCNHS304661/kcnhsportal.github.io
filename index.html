@@ -1,7 +1,10 @@
 <!-- 
-    School Portal - v4.0.2
+    School Portal - v4.0.3
 
     CHANGELOG:
+    v4.0.3 (Jul 27, 2026 02:13 PM) - Pure Read-Only Guest Bulletin View [FEAT]:
+    - [FEAT] Guest View: Removed 'Sign in to interact' prompt button and hidden likes/comments section from public guest bulletin cards for a clean, pure announcement feed.
+
     v4.0.2 (Jul 27, 2026 02:02 PM) - Mobile Back Button & Edge Swipe Gesture Navigation [FEAT]:
     - [FEAT] Navigation: Added history.pushState() tracking on tab switches so mobile back buttons return to previous portal pages.
     - [FEAT] Gestures: Added setupSwipeNavigation() edge-swipe right gesture listener for iOS and Android swipe-back navigation.
@@ -15,9 +18,6 @@
     - [FEAT] Guest Bulletin: Unauthenticated visitors can view public school announcements in read-only mode without login.
     - [FEAT] Registration Key System: Expiring registration key required for registration, managed by Principal/Asst. Principal/Developer.
     - [FEAT] Enhanced Forgot Password: Match email + full name + registration key to generate instant temporary password.
-
-    v3.0.1 (Jul 27, 2026 01:20 PM) - Mobile Navigation Fix [FIX]:
-    - [FIX] Mobile: Fixed sidebar showing on top of mobile content on mobile devices via .sidebar-visible CSS class.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -13377,22 +13377,6 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         </div>
                                     ` : ''}
 
-                                    <!-- GUEST INTERACTION BAR (LOCKED) -->
-                                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-                                        <div class="flex items-center gap-4">
-                                            <button onclick="App.toast('Please sign in to like announcements.', 'info')" class="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
-                                                <i class="ph ph-heart text-base"></i>
-                                                <span>${Array.isArray(post.likes) ? post.likes.length : 0} Likes</span>
-                                            </button>
-                                            <button onclick="App.toast('Please sign in to view and write comments.', 'info')" class="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
-                                                <i class="ph ph-chat-circle text-base"></i>
-                                                <span>${Array.isArray(post.comments) ? post.comments.length : 0} Comments</span>
-                                            </button>
-                                        </div>
-                                        <button onclick="App.router('login')" class="text-brand-600 font-semibold hover:underline">
-                                            Sign in to interact →
-                                        </button>
-                                    </div>
                                 </div>
                             `).join('')}
                         </div>
