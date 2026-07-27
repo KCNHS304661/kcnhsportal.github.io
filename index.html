@@ -1,23 +1,21 @@
 <!-- 
-    School Portal - v4.0.3
+    School Portal - v4.0.4
 
     CHANGELOG:
+    v4.0.4 (Jul 27, 2026 02:27 PM) - Enhanced Personnel Directory Search [FEAT]:
+    - [FEAT] Directory: Upgraded performDirectorySearch() to perform robust multi-token keyword searching across all public professional and profile attributes.
+    - [FEAT] Directory: Enhanced search result cards to display advisory sections and email details.
+    - [FEAT] Security: Hardened performDirectorySearch() with explicit lockedFields security guards to ensure passwords, registration keys, and internal tokens are strictly non-searchable.
+
     v4.0.3 (Jul 27, 2026 02:13 PM) - Pure Read-Only Guest Bulletin View [FEAT]:
     - [FEAT] Guest View: Removed 'Sign in to interact' prompt button and hidden likes/comments section from public guest bulletin cards for a clean, pure announcement feed.
 
     v4.0.2 (Jul 27, 2026 02:02 PM) - Mobile Back Button & Edge Swipe Gesture Navigation [FEAT]:
     - [FEAT] Navigation: Added history.pushState() tracking on tab switches so mobile back buttons return to previous portal pages.
     - [FEAT] Gestures: Added setupSwipeNavigation() edge-swipe right gesture listener for iOS and Android swipe-back navigation.
-    - [FEAT] Navigation: Added popstate event handler in init() to handle browser forward/back buttons smoothly without duplicate history entries.
 
     v4.0.1 (Jul 27, 2026 01:57 PM) - KCNHS Connect Branding & Instant Rendering [FEAT]:
     - [FEAT] Branding: Integrated official KCNHS Connect logo, portal title, background image, opacity (0.6), and School Year 2026-2027 into default App.settings.
-    - [FIX] Auth: Prevented Guest Bulletin background fetch from interrupting active Sign In / Registration form views.
-
-    v4.0.0 (Jul 27, 2026 01:40 PM) - Major Platform Upgrade [FEAT]:
-    - [FEAT] Guest Bulletin: Unauthenticated visitors can view public school announcements in read-only mode without login.
-    - [FEAT] Registration Key System: Expiring registration key required for registration, managed by Principal/Asst. Principal/Developer.
-    - [FEAT] Enhanced Forgot Password: Match email + full name + registration key to generate instant temporary password.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -14547,6 +14545,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                                 <div class="space-y-0.5 text-[10px] text-gray-500">
                                                     ${u.department ? `<p class="truncate"><i class="ph-fill ph-buildings"></i> ${u.department}</p>` : ''}
                                                     ${u.subject ? `<p class="truncate"><i class="ph-fill ph-book-open"></i> ${u.subject}</p>` : ''}
+                                                    ${u.advisorySection ? `<p class="truncate"><i class="ph-fill ph-users-three"></i> Section: ${u.advisorySection}</p>` : ''}
+                                                    ${u.email ? `<p class="truncate"><i class="ph-fill ph-envelope"></i> ${u.email}</p>` : ''}
                                                 </div>
                                             </div>
                                         </div>
@@ -14665,8 +14665,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     });
                 });
 
-                // Fields to search through. Now includes basic public personal fields.
-                const searchFields = ['firstName', 'lastName', 'middleName', 'position', 'designation', 'advisorySection', 'department', 'subject', 'gradeLevel', 'officeAndTask', 'role', 'bloodType', 'gender', 'civilStatus', 'religion', 'ethnicity', 'education', 'age', 'height', 'weight', 'contactNumber'];
+                // Fields to search through (Public professional and authorized profile fields)
+                const searchFields = ['firstName', 'lastName', 'middleName', 'email', 'position', 'designation', 'advisorySection', 'department', 'subject', 'gradeLevel', 'officeAndTask', 'role', 'bloodType', 'gender', 'civilStatus', 'religion', 'ethnicity', 'education', 'age', 'height', 'weight', 'contactNumber', 'empId'];
+                // Strictly non-searchable security fields
+                const lockedFields = ['password', 'registrationKey', 'sessionToken', 'tempPassword', 'sysCode'];
 
                 return this.users.filter(u => {
                     // Always exclude Dev accounts from public directory unless explicitly searched
@@ -14676,8 +14678,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     let matchesTargeted = true;
                     if (targetedFilters.length > 0) {
                         matchesTargeted = targetedFilters.every(filter => {
+                            if (lockedFields.includes(filter.field)) return false;
                             const val = u[filter.field];
-                            if (!val) return false;
+                            if (val === undefined || val === null) return false;
                             const strVal = String(val).toLowerCase();
                             if (filter.exact) {
                                 return strVal === filter.value || strVal.startsWith(filter.value);
@@ -14692,15 +14695,17 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     // If remaining search string is empty, targeted filters were enough
                     if (searchStr === '') return true;
 
-                    // Basic substring & "fuzzy" split matching
+                    // Basic substring & multi-token split matching
                     const terms = searchStr.split(' ').filter(t => t.length > 0);
                     if (terms.length === 0) return true;
 
-                    // Helper: Check if a user field contains the term
+                    // Helper: Check if a user field contains the term (String conversion for numbers)
                     const matchesTerm = (term) => {
                         return searchFields.some(field => {
-                            if (u[field] && typeof u[field] === 'string') {
-                                return u[field].toLowerCase().includes(term);
+                            if (lockedFields.includes(field)) return false;
+                            const val = u[field];
+                            if (val !== undefined && val !== null) {
+                                return String(val).toLowerCase().includes(term);
                             }
                             return false;
                         });
