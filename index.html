@@ -1,21 +1,23 @@
 <!-- 
-    School Portal - v4.0.4
+    School Portal - v4.1.1
 
     CHANGELOG:
+    v4.1.1 (Jul 31, 2026 11:10 AM) - Layout & Calendar Refinements [FIX & FEAT]:
+    - [FIX] Post Media Display: Changed image rendering in guest mode and main bulletin from `object-cover` cropping to `object-contain` with full-aspect aspect ratio preservation.
+    - [FEAT] Bulletin Layout: Restructured bulletin into a 2-column layout with centered announcements and top-right side column for the Calendar.
+    - [FEAT] Calendar & Upcoming Events: Added 15-days ahead incoming events feed directly below the compact calendar grid.
+
     v4.0.4 (Jul 27, 2026 02:27 PM) - Enhanced Personnel Directory Search [FEAT]:
-    - [FEAT] Directory: Upgraded performDirectorySearch() to perform robust multi-token keyword searching across all public professional and profile attributes.
-    - [FEAT] Directory: Enhanced search result cards to display advisory sections and email details.
-    - [FEAT] Security: Hardened performDirectorySearch() with explicit lockedFields security guards to ensure passwords, registration keys, and internal tokens are strictly non-searchable.
+    - [FEAT] Directory: Upgraded performDirectorySearch() for multi-token keyword searching.
 
     v4.0.3 (Jul 27, 2026 02:13 PM) - Pure Read-Only Guest Bulletin View [FEAT]:
-    - [FEAT] Guest View: Removed 'Sign in to interact' prompt button and hidden likes/comments section from public guest bulletin cards for a clean, pure announcement feed.
+    - [FEAT] Guest View: Pure read-only guest bulletin with no interactive elements.
 
     v4.0.2 (Jul 27, 2026 02:02 PM) - Mobile Back Button & Edge Swipe Gesture Navigation [FEAT]:
-    - [FEAT] Navigation: Added history.pushState() tracking on tab switches so mobile back buttons return to previous portal pages.
-    - [FEAT] Gestures: Added setupSwipeNavigation() edge-swipe right gesture listener for iOS and Android swipe-back navigation.
+    - [FEAT] Navigation: history.pushState tracking + swipe-back gestures.
 
     v4.0.1 (Jul 27, 2026 01:57 PM) - KCNHS Connect Branding & Instant Rendering [FEAT]:
-    - [FEAT] Branding: Integrated official KCNHS Connect logo, portal title, background image, opacity (0.6), and School Year 2026-2027 into default App.settings.
+    - [FEAT] Branding: Official KCNHS Connect logo, background, and School Year defaults.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -11938,6 +11940,45 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 display: none !important;
             }
         }
+
+        /* v4.1.1: Bulletin 2-Column Grid Layout (Native CSS) */
+        .bulletin-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .bulletin-main-feed {
+            width: 100%;
+            flex: 1 1 0%;
+            min-width: 0;
+            order: 2;
+        }
+
+        .bulletin-calendar-side {
+            width: 100%;
+            flex-shrink: 0;
+            order: 1;
+        }
+
+        @media (min-width: 992px) {
+            .bulletin-grid-container {
+                flex-direction: row !important;
+            }
+
+            .bulletin-main-feed {
+                order: 1 !important;
+            }
+
+            .bulletin-calendar-side {
+                width: 320px !important;
+                position: sticky !important;
+                top: 1rem !important;
+                order: 2 !important;
+            }
+        }
     </style>
 
     <!-- Preconnects for Performance -->
@@ -12028,6 +12069,20 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     <i class="ph ph-book-open text-xl"></i>
                     <span class="font-medium">User Guide</span>
                 </button>
+                <!-- [v4.1.0] FAQ Button -->
+                <button onclick="App.renderFAQ()"
+                    class="sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-brand-600 transition-colors"
+                    data-target="faq" data-tooltip="Frequently Asked Questions">
+                    <i class="ph ph-question text-xl"></i>
+                    <span class="font-medium">FAQ</span>
+                </button>
+                <!-- [v4.1.0] Downloads Button -->
+                <button onclick="App.renderDownloads()"
+                    class="sidebar-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-brand-600 transition-colors"
+                    data-target="downloads" data-tooltip="Download Forms & Templates">
+                    <i class="ph ph-download-simple text-xl"></i>
+                    <span class="font-medium">Downloads</span>
+                </button>
             </div>
 
             <div class="p-4 border-t border-gray-100">
@@ -12038,12 +12093,17 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         <p id="sidebar-role" class="text-xs text-gray-500 truncate">Faculty</p>
                     </div>
                 </div>
+                <!-- [v4.1.0] Feedback Button (Desktop Sidebar, above Sign Out) -->
+                <button onclick="App.openFeedback()"
+                    class="w-full flex items-center justify-center gap-2 text-brand-600 text-sm font-medium py-2 hover:bg-brand-50 rounded-lg transition-colors mb-2">
+                    <i class="ph ph-chat-dots"></i> Feedback
+                </button>
                 <button onclick="App.logout()"
                     class="w-full flex items-center justify-center gap-2 text-red-500 text-sm font-medium py-2 hover:bg-red-50 rounded-lg transition-colors mb-4">
                     <i class="ph ph-sign-out"></i> Sign Out
                 </button>
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-400 font-medium">School Portal v4.0.1</p>
+                    <p class="text-[10px] text-gray-400 font-medium">School Portal v4.1.0</p>
                     <p class="text-[9px] text-gray-300 mt-0.5">Developed by Rion</p>
                 </div>
             </div>
@@ -12401,6 +12461,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             pendingCallback: null,
             refreshInterval: null,
 
+            // v4.1.0: Feedback + Events Calendar state
+            events: [],
+            feedback: [],
+            calendarMonth: new Date().getMonth(),
+            calendarYear: new Date().getFullYear(),
+            calendarSelectedDate: null,
+
             async init() {
                 // SWR Caching: Load cached data & custom settings from IndexedDB for instant render
                 try {
@@ -12413,6 +12480,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         if (data.reportTypes) this.reportTypes = data.reportTypes;
                         if (data.reports) this.reports = data.reports;
                         if (data.settings) this.settings = { ...this.settings, ...data.settings };
+                        if (data.events) this.events = data.events;
+                        if (data.feedback) this.feedback = data.feedback;
                     }
                 } catch (e) { console.warn("Cache load failed", e); }
 
@@ -12705,6 +12774,18 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         this.applySettings();
                     }
 
+                    // v4.1.0: Fetch Events (+ Feedback for Dev)
+                    try {
+                        const resEvents = await this.api('getEvents');
+                        if (resEvents && resEvents.events) this.events = resEvents.events;
+                    } catch(e) { console.warn('Events fetch failed', e); }
+                    if (this.isDev()) {
+                        try {
+                            const resFeedback = await this.api('getFeedback');
+                            if (resFeedback && resFeedback.feedback) this.feedback = resFeedback.feedback;
+                        } catch(e) { console.warn('Feedback fetch failed', e); }
+                    }
+
                     // SWR Caching: Save fresh data to IndexedDB
                     try {
                         LocalDB.set('cache', DB_CACHE_DATA, {
@@ -12713,7 +12794,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             groups: this.groups,
                             reportTypes: this.reportTypes,
                             reports: this.reports,
-                            settings: this.settings
+                            settings: this.settings,
+                            events: this.events
                         });
                     } catch (e) { console.warn("Cache save failed", e); }
 
@@ -13370,8 +13452,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                     </div>
 
                                     ${post.media ? `
-                                        <div class="rounded-xl overflow-hidden border border-gray-100 max-h-96">
-                                            ${post.mediaType === 'video' ? `<video src="${post.media}" controls class="w-full h-full object-cover"></video>` : `<img src="${this.resolveImageUrl(post.media)}" class="w-full h-full object-cover">`}
+                                        <div class="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center mt-3">
+                                            ${post.mediaType === 'video' ? `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full max-h-[550px] object-contain"></video>` : `<img src="${this.resolveImageUrl(post.media)}" class="w-full max-h-[550px] object-contain">`}
                                         </div>
                                     ` : ''}
 
@@ -14382,8 +14464,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                     let mediaContent = '';
                     if (post.media) {
-                        if (post.mediaType === 'video') mediaContent = `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full rounded-xl mt-3 mb-2 max-h-96 object-contain bg-black"></video>`;
-                        else mediaContent = `<img src="${this.resolveImageUrl(post.media)}" class="w-full rounded-xl mt-3 mb-2 max-h-96 object-contain bg-black">`;
+                        if (post.mediaType === 'video') mediaContent = `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full rounded-xl mt-3 mb-2 max-h-[450px] object-contain bg-black"></video>`;
+                        else mediaContent = `<div class="rounded-xl overflow-hidden mt-3 mb-2 bg-gray-50 border border-gray-100 flex items-center justify-center p-2 max-h-[450px]"><img src="${this.resolveImageUrl(post.media)}" class="max-h-[430px] w-auto max-w-full object-contain mx-auto"></div>`;
                     }
 
                     return `
@@ -14424,18 +14506,31 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 `}).join('');
 
                 container.innerHTML = `
-                    <div class="max-w-3xl mx-auto w-full">
-                        <div class="px-5 md:px-0 pt-4 pb-4 animate-fade-in flex justify-between items-end">
-                            <div><h2 class="text-2xl font-bold text-gray-900">School Bulletin</h2><p class="text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Latest Announcements</p></div>
+                    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-12 animate-fade-in">
+                        <!-- BULLETIN HEADER -->
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">School Bulletin</h2>
+                                <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mt-0.5">Latest Announcements</p>
+                            </div>
                             ${canPost ? `<button onclick="App.openPostModal()" class="bg-brand-600 text-white rounded-full px-4 py-2 text-xs font-bold shadow-lg shadow-brand-200 hover:bg-brand-700 transition-transform active:scale-95 flex items-center gap-2"><i class="ph-fill ph-pencil-simple"></i> New Post</button>` : ''}
                         </div>
-                        <div class="max-w-3xl mx-auto w-full px-5 md:px-0 animate-fade-in">
 
-                        <div class="space-y-4 px-5 md:px-0 pb-10">${postsHtml}</div>
-                        
-                        <div class="px-5 md:px-0 pb-10 text-center">
-                            ${hasMore ? `<button onclick="App.postsLimit += 10; App.renderHome(document.getElementById('main-view'));" class="px-6 py-3 bg-white border border-gray-200 text-brand-600 font-bold text-sm rounded-xl shadow-sm hover:bg-gray-50 transition-colors">Load More Posts</button>` : `<p class="text-xs text-gray-400">All recent posts loaded.</p>`}
-                            <p class="mt-4 text-[10px] text-gray-400">Note: Posts older than 1 year are archived.</p>
+                        <!-- 2-COLUMN BULLETIN LAYOUT (NATIVE CSS GRID) -->
+                        <div class="bulletin-grid-container">
+                            <!-- BULLETIN ANNOUNCEMENT FEED (LEFT/CENTER) -->
+                            <div class="bulletin-main-feed space-y-4">
+                                ${postsHtml}
+                                <div class="pt-4 pb-10 text-center">
+                                    ${hasMore ? `<button onclick="App.postsLimit += 10; App.renderHome(document.getElementById('main-view'));" class="px-6 py-3 bg-white border border-gray-200 text-brand-600 font-bold text-sm rounded-xl shadow-sm hover:bg-gray-50 transition-colors">Load More Posts</button>` : `<p class="text-xs text-gray-400">All recent posts loaded.</p>`}
+                                    <p class="mt-4 text-[10px] text-gray-400">Note: Posts older than 1 year are archived.</p>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT SIDEBAR: CALENDAR & 15-DAYS AHEAD INCOMING EVENTS (TOP-RIGHT CORNER) -->
+                            <div class="bulletin-calendar-side">
+                                ${this.renderCalendarWidget()}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -17004,6 +17099,14 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         <button onclick="App.savePassword()" class="mt-5 w-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"><i class="ph-bold ph-lock-key"></i> Update Password</button>
                                     </div>
                                 </div>
+                                <!-- Feedback & Support Card (Bottom of Profile) -->
+                                <div class="p-6 bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:border-brand-200 transition-colors">
+                                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wider flex items-center gap-2"><i class="ph-fill ph-chat-dots text-brand-500"></i> Feedback & Support</h3>
+                                    <p class="text-xs text-gray-500 mb-4">Have questions, reported bugs, or ideas for improvement? Send us feedback directly.</p>
+                                    <button onclick="App.openFeedback()" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-600 text-sm font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                        <i class="ph-bold ph-chat-circle-dots"></i> ${this.isDev() ? 'Open Feedback Inbox' : 'Send Feedback'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -17586,6 +17689,577 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 document.getElementById('confirmPasswordInput').value = '';
 
                 this.toast('Password updated successfully!');
+            },
+
+            // ==========================================
+            // v4.1.0: PERMISSION HELPERS
+            // ==========================================
+            canManageEvents() {
+                if (!this.user) return false;
+                return this.isDev() || this.isPrincipal() || this.isDeptHead() ||
+                    (this.user.position || '').includes('Assistant Principal');
+            },
+
+            // ==========================================
+            // v4.1.0: FAQ SECTION
+            // ==========================================
+            renderFAQ() {
+                const faqs = [
+                    { q: 'How do I register an account?', a: 'You need a valid Registration Key from the Principal or System Developer. Go to the Sign In page, click "Register", fill in your details and paste the registration key.' },
+                    { q: 'I forgot my password. How do I reset it?', a: 'On the login page, click "Forgot Password". You will need your registered name, email, and a valid Registration Key. A temporary password will be generated for you.' },
+                    { q: 'Who can post announcements on the bulletin?', a: 'Department heads, group leaders, admins, the principal, and the system developer can create bulletin posts. Regular faculty members can read and interact with posts.' },
+                    { q: 'How do I submit a report?', a: 'Go to the Reports & Analytics tab. Select a report category, then click "Submit Report". Upload your file (Excel/CSV) and it will be parsed and stored automatically.' },
+                    { q: 'What file formats are accepted for reports?', a: 'Excel files (.xlsx, .xls) and CSV files (.csv) are supported. The system will auto-detect and parse headers.' },
+                    { q: 'How do I join a department group?', a: 'Department groups are managed by group leaders. Ask your Department Head to add you to the group via the Group Management panel.' },
+                    { q: 'Can I change my profile information?', a: 'Yes! Go to My Profile and update any of your personal, contact, or academic fields. Click "Save Profile" when done.' },
+                    { q: 'Is my personal data (IDs, address) visible to others?', a: 'No. Fields marked with a lock icon (Private) are hidden from other users viewing your profile. Only you and administrators can see them.' },
+                    { q: 'How do I use the Personnel Directory?', a: 'Click the "Directory" tab and type a name, position, department, or subject to search. Results show matching faculty with their public information.' },
+                    { q: 'What is the DRRM Corner?', a: 'The DRRM (Disaster Risk Reduction Management) Corner is a dedicated module for tracking school incidents and safety reports. It is only visible to DRRM officers, the principal, and the developer.' },
+                    { q: 'How do I add a school event to the calendar?', a: 'If you are a Developer, Principal, Assistant Principal, or Department Head, click the edit button on the calendar widget in the Bulletin page. Enter the date, title, and description.' },
+                    { q: 'How do I send feedback or report a bug?', a: 'Click the "Feedback" button in the sidebar (desktop) or at the bottom of your Profile page (mobile). Fill in the form and submit. The developer will receive your message.' }
+                ];
+
+                const html = `
+                    <div class="max-w-2xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="ph-fill ph-question text-brand-600 text-2xl"></i> Frequently Asked Questions</h3>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+                        <div class="space-y-3 max-h-[70vh] overflow-y-auto custom-scroll pr-2">
+                            ${faqs.map((faq, i) => `
+                                <div class="border border-gray-200 rounded-xl overflow-hidden bg-white hover:border-brand-200 transition-colors">
+                                    <button onclick="const ans=document.getElementById('faq-a-${i}');const icon=document.getElementById('faq-icon-${i}');ans.classList.toggle('hidden');icon.classList.toggle('rotate-180')" class="w-full text-left px-5 py-4 flex items-center justify-between gap-3">
+                                        <span class="text-sm font-bold text-gray-800 flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-xs font-bold flex-shrink-0">${i + 1}</span> ${faq.q}</span>
+                                        <i id="faq-icon-${i}" class="ph ph-caret-down text-gray-400 transition-transform duration-200 flex-shrink-0"></i>
+                                    </button>
+                                    <div id="faq-a-${i}" class="hidden px-5 pb-4 pt-0">
+                                        <p class="text-sm text-gray-600 leading-relaxed pl-8">${faq.a}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                this.openModal(html);
+            },
+
+            // ==========================================
+            // v4.1.0: DOWNLOADABLE FORMS & DOCUMENTS
+            // ==========================================
+            renderDownloads() {
+                const downloads = [
+                    { name: 'Student General Information Template', desc: 'Standard Excel template for encoding student general information data.', icon: 'ph-student', color: 'blue', action: 'downloadStudentTemplate' },
+                    { name: 'Learner Profile Template', desc: 'Template for learner profile data submission (LRN, demographics, etc).', icon: 'ph-identification-card', color: 'teal', action: 'downloadLearnerProfile' },
+                    { name: 'Attendance Records Template', desc: 'Monthly attendance tracking sheet for class advisers.', icon: 'ph-calendar-check', color: 'emerald', action: 'downloadAttendanceTemplate' },
+                    { name: 'Academic Performance Template', desc: 'Quarterly grading and performance records template.', icon: 'ph-exam', color: 'indigo', action: 'downloadAcademicTemplate' }
+                ];
+
+                const html = `
+                    <div class="max-w-2xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="ph-fill ph-download-simple text-brand-600 text-2xl"></i> Downloads</h3>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-6">Download official form templates for report submissions.</p>
+                        <div class="space-y-3">
+                            ${downloads.map((dl, i) => `
+                                <div class="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:border-brand-200 hover:shadow-sm transition-all group">
+                                    <div class="w-12 h-12 rounded-xl bg-${dl.color}-50 text-${dl.color}-600 flex items-center justify-center flex-shrink-0">
+                                        <i class="ph-fill ${dl.icon} text-2xl"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-sm font-bold text-gray-900">${dl.name}</h4>
+                                        <p class="text-xs text-gray-500 mt-0.5">${dl.desc}</p>
+                                    </div>
+                                    <button onclick="App.${dl.action}()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 active:scale-95">
+                                        <i class="ph-bold ph-download-simple"></i> Download
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-6 text-center">More templates will be added as needed. Contact the system developer for custom forms.</p>
+                    </div>
+                `;
+                this.openModal(html);
+            },
+            downloadStudentTemplate() {
+                try {
+                    const b64 = STUDENT_GEN_INFO_TEMPLATE;
+                    const byteChars = atob(b64);
+                    const byteNumbers = new Array(byteChars.length);
+                    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = 'Student_General_Information_Template.xlsx';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.toast('Template downloaded!');
+                } catch(e) { this.toast('Download failed: ' + e.message, 'error'); }
+            },
+            downloadLearnerProfile() { this.toast('Template will be available soon.', 'info'); },
+            downloadAttendanceTemplate() { this.toast('Template will be available soon.', 'info'); },
+            downloadAcademicTemplate() { this.toast('Template will be available soon.', 'info'); },
+
+            // ==========================================
+            // v4.1.0: FEEDBACK SYSTEM
+            // ==========================================
+            openFeedback() {
+                if (this.isDev()) {
+                    this.renderFeedbackInbox();
+                } else {
+                    this.renderFeedbackForm();
+                }
+            },
+
+            renderFeedbackForm() {
+                const html = `
+                    <div class="max-w-lg mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="ph-fill ph-chat-dots text-brand-600 text-2xl"></i> Send Feedback</h3>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-6">Help us improve KCNHS Connect. Report bugs, suggest features, or share your thoughts.</p>
+                        <form onsubmit="App.submitFeedback(event)" class="space-y-4">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Feedback Type</label>
+                                <select name="type" class="input-field text-sm py-2.5" required>
+                                    <option value="Bug Report">🐛 Bug Report</option>
+                                    <option value="Feature Request">💡 Feature Request</option>
+                                    <option value="General">💬 General Feedback</option>
+                                    <option value="Improvement">🔧 Improvement Suggestion</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Subject</label>
+                                <input type="text" name="subject" placeholder="Brief summary of your feedback" class="input-field text-sm py-2.5" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Message</label>
+                                <textarea name="message" rows="5" placeholder="Describe the issue or suggestion in detail..." class="input-field text-sm py-2.5 resize-none" required></textarea>
+                            </div>
+                            <button type="submit" id="feedback-submit-btn" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-paper-plane-right"></i> Submit Feedback
+                            </button>
+                        </form>
+                        <p class="text-[10px] text-gray-400 mt-4 text-center">Your name, email, and role will be included with this submission.</p>
+                    </div>
+                `;
+                this.openModal(html);
+            },
+
+            async submitFeedback(e) {
+                e.preventDefault();
+                const form = e.target;
+                const btn = document.getElementById('feedback-submit-btn');
+                const origText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Sending...';
+
+                try {
+                    const data = {
+                        type: form.type.value,
+                        subject: form.subject.value,
+                        message: form.message.value
+                    };
+                    const res = await this.api('submitFeedback', data);
+                    if (res && res.status === 'success') {
+                        this.toast('Feedback submitted successfully! Thank you.');
+                        this.closeModal();
+                    } else {
+                        throw new Error(res?.message || 'Failed to submit feedback');
+                    }
+                } catch(err) {
+                    this.toast('Failed: ' + err.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = origText;
+                }
+            },
+
+            renderFeedbackInbox() {
+                const feedbackList = (this.feedback || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                const unreadCount = feedbackList.filter(f => f.status === 'unread').length;
+
+                const html = `
+                    <div class="max-w-2xl mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <i class="ph-fill ph-chat-dots text-brand-600 text-2xl"></i> Feedback Inbox
+                                ${unreadCount > 0 ? `<span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${unreadCount} new</span>` : ''}
+                            </h3>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+                        ${feedbackList.length === 0 ? `
+                            <div class="text-center py-16">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="ph ph-tray text-3xl text-gray-400"></i></div>
+                                <h4 class="font-bold text-gray-600">No Feedback Yet</h4>
+                                <p class="text-xs text-gray-400 mt-1">User feedback will appear here.</p>
+                            </div>
+                        ` : `
+                            <div class="space-y-2 max-h-[70vh] overflow-y-auto custom-scroll pr-2">
+                                ${feedbackList.map(fb => `
+                                    <div onclick="App.openFeedbackDetail('${fb.id}')" class="flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${fb.status === 'unread' ? 'bg-brand-50/50 border-brand-200 hover:border-brand-400' : fb.status === 'resolved' ? 'bg-gray-50 border-gray-200 opacity-60 hover:opacity-100' : 'bg-white border-gray-200 hover:border-brand-300'}">
+                                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 text-sm font-bold">${(fb.userName || 'U').charAt(0).toUpperCase()}</div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="text-sm font-bold text-gray-900 truncate">${fb.userName || 'Unknown'}</span>
+                                                <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${fb.type === 'Bug Report' ? 'bg-red-100 text-red-700' : fb.type === 'Feature Request' ? 'bg-purple-100 text-purple-700' : fb.type === 'Improvement' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}">${fb.type}</span>
+                                                ${fb.status === 'unread' ? '<span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse flex-shrink-0"></span>' : ''}
+                                            </div>
+                                            <p class="text-sm font-medium text-gray-800 truncate">${fb.subject || '(No Subject)'}</p>
+                                            <p class="text-xs text-gray-500 mt-0.5">${fb.userRole || 'Faculty'} • ${this.formatDate(fb.createdAt)}</p>
+                                        </div>
+                                        <i class="ph ph-caret-right text-gray-400 mt-3 flex-shrink-0"></i>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+                this.openModal(html);
+            },
+
+            async openFeedbackDetail(fbId) {
+                const fb = (this.feedback || []).find(f => String(f.id) === String(fbId));
+                if (!fb) return;
+
+                // Mark as read if unread
+                if (fb.status === 'unread') {
+                    try {
+                        await this.api('updateFeedbackStatus', { id: fb.id, status: 'read' });
+                        fb.status = 'read';
+                    } catch(e) {}
+                }
+
+                const html = `
+                    <div class="max-w-lg mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <button onclick="App.renderFeedbackInbox()" class="text-sm text-brand-600 font-bold flex items-center gap-1 hover:text-brand-700"><i class="ph ph-arrow-left"></i> Back to Inbox</button>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+
+                        <!-- Sender Details -->
+                        <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3"><i class="ph-fill ph-user"></i> Sender Details</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div><span class="text-gray-500 text-xs block">Name</span><span class="font-bold text-gray-900">${fb.userName || 'Unknown'}</span></div>
+                                <div><span class="text-gray-500 text-xs block">Email</span><span class="font-medium text-gray-800">${fb.userEmail || '-'}</span></div>
+                                <div><span class="text-gray-500 text-xs block">Role</span><span class="font-medium text-gray-800">${fb.userRole || 'Faculty'}</span></div>
+                                <div><span class="text-gray-500 text-xs block">Date Sent</span><span class="font-medium text-gray-800">${this.formatDate(fb.createdAt)}</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Content -->
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-sm font-bold px-3 py-1 rounded-full ${fb.type === 'Bug Report' ? 'bg-red-100 text-red-700' : fb.type === 'Feature Request' ? 'bg-purple-100 text-purple-700' : fb.type === 'Improvement' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}">${fb.type}</span>
+                                <span class="text-xs px-2 py-0.5 rounded-full ${fb.status === 'resolved' ? 'bg-green-100 text-green-700' : fb.status === 'read' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}">${fb.status}</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-3">${fb.subject || '(No Subject)'}</h3>
+                            <div class="bg-white border border-gray-200 rounded-xl p-4">
+                                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">${fb.message || '(No Message)'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3">
+                            ${fb.status !== 'resolved' ? `<button onclick="App.resolveFeedback('${fb.id}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"><i class="ph-bold ph-check-circle"></i> Mark Resolved</button>` : ''}
+                            <button onclick="App.deleteFeedbackItem('${fb.id}')" class="bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold py-3 px-5 rounded-xl transition-colors flex items-center justify-center gap-2"><i class="ph-bold ph-trash"></i> Delete</button>
+                        </div>
+                    </div>
+                `;
+
+                // Re-use the existing modal (replace content)
+                const content = document.getElementById('modal-content');
+                if (content) content.innerHTML = html;
+            },
+
+            async resolveFeedback(fbId) {
+                try {
+                    await this.api('updateFeedbackStatus', { id: fbId, status: 'resolved' });
+                    const fb = this.feedback.find(f => String(f.id) === String(fbId));
+                    if (fb) fb.status = 'resolved';
+                    this.toast('Feedback marked as resolved.');
+                    this.renderFeedbackInbox();
+                } catch(e) { this.toast('Failed: ' + e.message, 'error'); }
+            },
+
+            async deleteFeedbackItem(fbId) {
+                try {
+                    await this.api('deleteFeedback', { id: fbId });
+                    this.feedback = this.feedback.filter(f => String(f.id) !== String(fbId));
+                    this.toast('Feedback deleted.');
+                    this.renderFeedbackInbox();
+                } catch(e) { this.toast('Failed: ' + e.message, 'error'); }
+            },
+
+            // ==========================================
+            // v4.1.0: SCHOOL EVENTS CALENDAR WIDGET & 15-DAYS AHEAD LIST
+            // ==========================================
+            renderCalendarWidget() {
+                const month = this.calendarMonth;
+                const year = this.calendarYear;
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+                // Map events for this month
+                const eventMap = {};
+                (this.events || []).forEach(evt => {
+                    if (!evt.eventDate) return;
+                    const d = new Date(evt.eventDate + 'T00:00:00');
+                    if (d.getMonth() === month && d.getFullYear() === year) {
+                        const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        if (!eventMap[key]) eventMap[key] = [];
+                        eventMap[key].push(evt);
+                    }
+                });
+
+                const selectedDateStr = this.calendarSelectedDate;
+                const selectedEvents = selectedDateStr && eventMap[selectedDateStr] ? eventMap[selectedDateStr] : [];
+
+                // Compact Calendar Grid Cells
+                let calCells = '';
+                for (let i = 0; i < firstDay; i++) calCells += '<div class="h-7"></div>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const hasEvent = eventMap[dateStr] && eventMap[dateStr].length > 0;
+                    const isToday = dateStr === todayStr;
+                    const isSelected = dateStr === selectedDateStr;
+                    calCells += `
+                        <button onclick="App.calendarSelectDate('${dateStr}')"
+                            class="h-7 w-full rounded-md text-[11px] font-medium relative transition-all flex items-center justify-center
+                            ${isSelected ? 'bg-brand-600 text-white shadow' : isToday ? 'bg-brand-50 text-brand-700 font-bold ring-1 ring-brand-300' : 'hover:bg-gray-100 text-gray-700'}">
+                            ${d}
+                            ${hasEvent ? `<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-brand-500'}"></span>` : ''}
+                        </button>`;
+                }
+
+                // --- 15-DAYS AHEAD UPCOMING EVENTS ---
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const fifteenDaysLater = new Date(todayStart.getTime() + 15 * 24 * 60 * 60 * 1000);
+
+                const upcomingEvents = (this.events || []).filter(evt => {
+                    if (!evt.eventDate) return false;
+                    const d = new Date(evt.eventDate + 'T00:00:00');
+                    return d >= todayStart && d <= fifteenDaysLater;
+                }).sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+                let upcomingHtml = '';
+                if (upcomingEvents.length > 0) {
+                    upcomingHtml = upcomingEvents.map(evt => {
+                        const evtDateObj = new Date(evt.eventDate + 'T00:00:00');
+                        const monthShort = evtDateObj.toLocaleDateString('en-US', { month: 'short' });
+                        const dayNum = evtDateObj.getDate();
+                        const dayOfWeek = evtDateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
+                        return `
+                            <div class="bg-gray-50 border border-gray-100 rounded-xl p-2.5 flex items-start gap-2.5 hover:border-brand-200 hover:bg-white transition-all group">
+                                <div class="bg-brand-600 text-white rounded-lg p-1.5 min-w-[40px] text-center flex-shrink-0">
+                                    <span class="block text-[9px] font-bold uppercase tracking-wider leading-none opacity-80">${monthShort}</span>
+                                    <span class="block text-sm font-extrabold leading-tight mt-0.5">${dayNum}</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-1">
+                                        <h5 class="text-xs font-bold text-gray-900 truncate group-hover:text-brand-600 transition-colors">${evt.title}</h5>
+                                        ${(this.canManageEvents() && (this.isDev() || this.isPrincipal() || String(evt.userId) === String(this.user.id))) ? `
+                                            <div class="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onclick="event.stopPropagation();App.openEventEditor('${evt.eventDate}','${evt.id}')" class="text-gray-400 hover:text-brand-600 p-0.5"><i class="ph ph-pencil-simple text-xs"></i></button>
+                                                <button onclick="event.stopPropagation();App.deleteEvent('${evt.id}')" class="text-gray-400 hover:text-red-600 p-0.5"><i class="ph ph-trash text-xs"></i></button>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                    ${evt.description ? `<p class="text-[11px] text-gray-500 line-clamp-2 mt-0.5 leading-snug">${evt.description}</p>` : ''}
+                                    <p class="text-[9px] text-gray-400 mt-1">${dayOfWeek} • ${evt.userName || 'School Event'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    upcomingHtml = `<p class="text-xs text-gray-400 text-center py-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">No events in the next 15 days.</p>`;
+                }
+
+                // Selected date highlight box
+                let selectedDateBox = '';
+                if (selectedDateStr) {
+                    const selDateObj = new Date(selectedDateStr + 'T00:00:00');
+                    const selFormatted = selDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    if (selectedEvents.length > 0) {
+                        selectedDateBox = `
+                            <div class="mb-3 p-3 bg-brand-50/60 border border-brand-200 rounded-xl animate-fade-in">
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <span class="text-xs font-bold text-brand-800">Events on ${selFormatted}</span>
+                                    <button onclick="App.calendarSelectDate(null)" class="text-[10px] text-brand-600 hover:underline">Clear</button>
+                                </div>
+                                <div class="space-y-1">
+                                    ${selectedEvents.map(evt => `
+                                        <div class="text-xs text-gray-800 font-medium">📌 ${evt.title} ${evt.description ? `<span class="text-gray-500 text-[11px]"> - ${evt.description}</span>` : ''}</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        selectedDateBox = `
+                            <div class="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-xl flex justify-between items-center text-xs animate-fade-in">
+                                <span class="text-gray-500 text-[11px]">No events on ${selFormatted}</span>
+                                <button onclick="App.calendarSelectDate(null)" class="text-[10px] text-gray-400 hover:text-gray-600">Clear</button>
+                            </div>
+                        `;
+                    }
+                }
+
+                return `
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3.5 animate-slide-up">
+                        <!-- CALENDAR HEADER -->
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="ph-fill ph-calendar text-brand-600 text-base"></i> School Calendar
+                            </h3>
+                            ${this.canManageEvents() ? `<button onclick="App.openEventEditor()" class="text-[10px] font-bold bg-brand-50 text-brand-600 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"><i class="ph-bold ph-plus text-[10px]"></i> Event</button>` : ''}
+                        </div>
+
+                        <!-- MONTH SWITCHER -->
+                        <div class="flex items-center justify-between bg-gray-50 px-3 py-1 rounded-xl border border-gray-100">
+                            <button onclick="App.calendarPrev()" class="w-6 h-6 rounded-md hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"><i class="ph-bold ph-caret-left text-xs"></i></button>
+                            <span class="text-xs font-bold text-gray-800">${monthNames[month]} ${year}</span>
+                            <button onclick="App.calendarNext()" class="w-6 h-6 rounded-md hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"><i class="ph-bold ph-caret-right text-xs"></i></button>
+                        </div>
+
+                        <!-- WEEKDAY HEADERS -->
+                        <div class="grid grid-cols-7 gap-0.5">
+                            ${dayNames.map(d => `<div class="text-center text-[9px] font-bold text-gray-400 uppercase py-0.5">${d}</div>`).join('')}
+                        </div>
+
+                        <!-- CALENDAR DAYS GRID -->
+                        <div class="grid grid-cols-7 gap-0.5">
+                            ${calCells}
+                        </div>
+
+                        ${selectedDateBox}
+
+                        <!-- INCOMING EVENTS (15-DAYS AHEAD) SECTION -->
+                        <div class="pt-3 border-t border-gray-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                    <i class="ph-fill ph-clock text-amber-500"></i> Next 15 Days Events
+                                </h4>
+                                <span class="text-[10px] text-gray-400 font-medium">${upcomingEvents.length} event${upcomingEvents.length === 1 ? '' : 's'}</span>
+                            </div>
+                            <div class="space-y-2 max-h-64 overflow-y-auto custom-scroll pr-1">
+                                ${upcomingHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            calendarSelectDate(dateStr) {
+                this.calendarSelectedDate = (this.calendarSelectedDate === dateStr) ? null : dateStr;
+                this.renderHome(document.getElementById('main-view'));
+            },
+
+            calendarPrev() {
+                this.calendarMonth--;
+                if (this.calendarMonth < 0) { this.calendarMonth = 11; this.calendarYear--; }
+                this.calendarSelectedDate = null;
+                this.renderHome(document.getElementById('main-view'));
+            },
+
+            calendarNext() {
+                this.calendarMonth++;
+                if (this.calendarMonth > 11) { this.calendarMonth = 0; this.calendarYear++; }
+                this.calendarSelectedDate = null;
+                this.renderHome(document.getElementById('main-view'));
+            },
+
+            openEventEditor(prefillDate, editId) {
+                let existing = null;
+                if (editId) {
+                    existing = (this.events || []).find(e => String(e.id) === String(editId));
+                }
+
+                const todayStr = new Date().toISOString().split('T')[0];
+                const dateVal = existing ? (existing.eventDate ? new Date(existing.eventDate).toISOString().split('T')[0] : '') : (prefillDate || todayStr);
+
+                const html = `
+                    <div class="max-w-lg mx-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2"><i class="ph-fill ph-calendar-plus text-brand-600 text-2xl"></i> ${existing ? 'Edit Event' : 'Add Event'}</h3>
+                            <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button>
+                        </div>
+                        <form onsubmit="App.saveEvent(event, '${editId || ''}')" class="space-y-4">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Event Date</label>
+                                <input type="date" name="eventDate" value="${dateVal}" class="input-field text-sm py-2.5" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Event Title</label>
+                                <input type="text" name="title" value="${existing ? existing.title : ''}" placeholder="e.g. Foundation Day, Science Fair..." class="input-field text-sm py-2.5" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-gray-600 block">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+                                <textarea name="description" rows="3" placeholder="Details about the event..." class="input-field text-sm py-2.5 resize-none">${existing ? existing.description || '' : ''}</textarea>
+                            </div>
+                            <button type="submit" id="event-submit-btn" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-${existing ? 'floppy-disk' : 'paper-plane-right'}"></i> ${existing ? 'Update Event' : 'Add Event'}
+                            </button>
+                        </form>
+                    </div>
+                `;
+                this.openModal(html);
+            },
+
+            async saveEvent(e, editId) {
+                e.preventDefault();
+                const form = e.target;
+                const btn = document.getElementById('event-submit-btn');
+                const origText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Saving...';
+
+                try {
+                    const data = {
+                        title: form.title.value,
+                        description: form.description.value,
+                        eventDate: form.eventDate.value
+                    };
+                    if (editId) data.id = editId;
+
+                    const res = await this.api('saveEvent', data);
+                    if (res && res.status === 'success') {
+                        // Refresh events
+                        const evtRes = await this.api('getEvents');
+                        if (evtRes && evtRes.events) this.events = evtRes.events;
+
+                        this.toast(editId ? 'Event updated!' : 'Event added to calendar!');
+                        this.closeModal();
+                        this.renderHome(document.getElementById('main-view'));
+                    } else {
+                        throw new Error(res?.message || 'Failed to save event');
+                    }
+                } catch(err) {
+                    this.toast('Failed: ' + err.message, 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = origText;
+                }
+            },
+
+            async deleteEvent(eventId) {
+                try {
+                    await this.api('deleteEvent', { id: eventId });
+                    this.events = this.events.filter(e => String(e.id) !== String(eventId));
+                    this.toast('Event deleted.');
+                    this.renderHome(document.getElementById('main-view'));
+                } catch(e) {
+                    this.toast('Failed: ' + e.message, 'error');
+                }
             }
         };
 
