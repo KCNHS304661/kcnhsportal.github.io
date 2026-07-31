@@ -1,11 +1,11 @@
 <!-- 
-    School Portal - v4.1.1
+    School Portal - v4.1.2
 
     CHANGELOG:
-    v4.1.1 (Jul 31, 2026 11:10 AM) - Layout & Calendar Refinements [FIX & FEAT]:
-    - [FIX] Post Media Display: Changed image rendering in guest mode and main bulletin from `object-cover` cropping to `object-contain` with full-aspect aspect ratio preservation.
-    - [FEAT] Bulletin Layout: Restructured bulletin into a 2-column layout with centered announcements and top-right side column for the Calendar.
-    - [FEAT] Calendar & Upcoming Events: Added 15-days ahead incoming events feed directly below the compact calendar grid.
+    v4.1.2 (Jul 31, 2026 12:55 PM) - Guest View Calendar & Registration Keys API Fix [FEAT & FIX]:
+    - [FEAT] Guest View Calendar: Included the School Calendar & 15-Day Incoming Events sidebar in the public Guest View (`_renderGuestHTML`).
+    - [FIX] Registration Keys API: Added `getRegistrationKeys`, `generateRegistrationKey`, and `revokeRegistrationKey` backend handlers to `code.gs`.
+    - [FEAT] Sidebar Refinements: Grouped FAQ and Downloads under User Guide and placed Feedback side-by-side next to Sign Out button.
 
     v4.0.4 (Jul 27, 2026 02:27 PM) - Enhanced Personnel Directory Search [FEAT]:
     - [FEAT] Directory: Upgraded performDirectorySearch() for multi-token keyword searching.
@@ -13368,6 +13368,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         if (res && res.posts) {
                             this.posts = res.posts;
                         }
+                        try {
+                            const resEvt = await this.api('getEvents');
+                            if (resEvt && resEvt.events) this.events = resEvt.events;
+                        } catch (e) {}
                     } catch (e) {
                         console.warn('Guest posts load failed', e);
                     }
@@ -13385,7 +13389,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             _renderGuestHTML(container) {
                 if (!container) return;
                 container.innerHTML = `
-                    <div class="max-w-4xl mx-auto px-4 py-6 animate-fade-in">
+                    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
                         <!-- GUEST HEADER BAR -->
                         <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div class="flex items-center gap-4">
@@ -13420,48 +13424,56 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             </span>
                         </div>
 
-                        <!-- POSTS FEED (READ ONLY) -->
-                        <div class="space-y-6">
-                            ${this._fetchingGuestPosts ? `
-                                <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
-                                    <div class="w-12 h-12 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <i class="ph ph-spinner animate-spin text-3xl"></i>
+                        <!-- 2-COLUMN BULLETIN LAYOUT (ANNOUNCEMENTS ON LEFT, CALENDAR ON RIGHT) -->
+                        <div class="bulletin-grid-container">
+                            <!-- POSTS FEED (READ ONLY) -->
+                            <div class="bulletin-main-feed space-y-6">
+                                ${this._fetchingGuestPosts ? `
+                                    <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                                        <div class="w-12 h-12 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <i class="ph ph-spinner animate-spin text-3xl"></i>
+                                        </div>
+                                        <h3 class="text-base font-bold text-gray-900">Loading Announcements...</h3>
                                     </div>
-                                    <h3 class="text-base font-bold text-gray-900">Loading Announcements...</h3>
-                                </div>
-                            ` : this.posts.length === 0 ? `
-                                <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
-                                    <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <i class="ph-fill ph-article text-3xl"></i>
+                                ` : this.posts.length === 0 ? `
+                                    <div class="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                                        <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <i class="ph-fill ph-article text-3xl"></i>
+                                        </div>
+                                        <h3 class="text-base font-bold text-gray-900">No Announcements Yet</h3>
+                                        <p class="text-xs text-gray-400 mt-1">Check back later for school updates and posts.</p>
                                     </div>
-                                    <h3 class="text-base font-bold text-gray-900">No Announcements Yet</h3>
-                                    <p class="text-xs text-gray-400 mt-1">Check back later for school updates and posts.</p>
-                                </div>
-                            ` : this.posts.map(post => `
-                                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-3">
-                                            <img src="${this.resolveImageUrl(post.avatar) || `https://ui-avatars.com/api/?name=${post.author}&background=random`}" class="w-10 h-10 rounded-full object-cover">
-                                            <div>
-                                                <h4 class="font-bold text-gray-900 text-sm">${post.author}</h4>
-                                                <p class="text-xs text-gray-400">${post.role || 'Faculty'} • ${this.formatDate(post.time)}</p>
+                                ` : this.posts.map(post => `
+                                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <img src="${this.resolveImageUrl(post.avatar) || `https://ui-avatars.com/api/?name=${post.author}&background=random`}" class="w-10 h-10 rounded-full object-cover">
+                                                <div>
+                                                    <h4 class="font-bold text-gray-900 text-sm">${post.author}</h4>
+                                                    <p class="text-xs text-gray-400">${post.role || 'Faculty'} • ${this.formatDate(post.time)}</p>
+                                                </div>
                                             </div>
+                                            ${post.tag ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">${post.tag}</span>` : ''}
                                         </div>
-                                        ${post.tag ? `<span class="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">${post.tag}</span>` : ''}
-                                    </div>
 
-                                    <div class="text-gray-800 text-sm whitespace-pre-line leading-relaxed">
-                                        ${post.content}
-                                    </div>
-
-                                    ${post.media ? `
-                                        <div class="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center mt-3">
-                                            ${post.mediaType === 'video' ? `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full max-h-[550px] object-contain"></video>` : `<img src="${this.resolveImageUrl(post.media)}" class="w-full max-h-[550px] object-contain">`}
+                                        <div class="text-gray-800 text-sm whitespace-pre-line leading-relaxed">
+                                            ${post.content}
                                         </div>
-                                    ` : ''}
 
-                                </div>
-                            `).join('')}
+                                        ${post.media ? `
+                                            <div class="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center mt-3">
+                                                ${post.mediaType === 'video' ? `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full max-h-[550px] object-contain"></video>` : `<img src="${this.resolveImageUrl(post.media)}" class="w-full max-h-[550px] object-contain">`}
+                                            </div>
+                                        ` : ''}
+
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- RIGHT SIDEBAR: CALENDAR & 15-DAYS AHEAD INCOMING EVENTS (TOP-RIGHT CORNER) -->
+                            <div class="bulletin-calendar-side">
+                                ${this.renderCalendarWidget()}
+                            </div>
                         </div>
                     </div>
                 `;
