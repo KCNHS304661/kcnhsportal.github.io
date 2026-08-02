@@ -1,7 +1,15 @@
 <!-- 
-    School Portal - v4.1.2
+    School Portal - v4.1.4
 
     CHANGELOG:
+    v4.1.4 (Aug 02, 2026 10:06 AM) - Launch Audit Polish & Safe Guard Checks [FIX]:
+    - [FIX] Date & User Fallbacks: Added NaN checks in formatDate() and null guards in performDirectorySearch() for zero-crash pre-launch reliability.
+
+    v4.1.3 (Aug 02, 2026 09:58 AM) - Fix Pop-up Errors & Single-Fetch Optimization [FIX]:
+    - [FIX] Consolidated API Refresh: Updated `refreshData()` to use `getInitialPayload` single-fetch endpoint, eliminating 8 parallel POST requests that caused GAS script lock timeouts and pop-up errors.
+    - [FIX] Silent Error Suppression: Added `silent` parameter to `api()` to suppress visual error toasts on background auto-refresh network glitches.
+    - [FIX] Automatic Session Guard: Handles unauthorized/invalid session responses cleanly by triggering logout instead of pop-up error loops.
+
     v4.1.2 (Jul 31, 2026 12:55 PM) - Guest View Calendar & Registration Keys API Fix [FEAT & FIX]:
     - [FEAT] Guest View Calendar: Included the School Calendar & 15-Day Incoming Events sidebar in the public Guest View (`_renderGuestHTML`).
     - [FIX] Registration Keys API: Added `getRegistrationKeys`, `generateRegistrationKey`, and `revokeRegistrationKey` backend handlers to `code.gs`.
@@ -12643,6 +12651,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 if (!dateStr) return '';
                 try {
                     const d = new Date(dateStr);
+                    if (isNaN(d.getTime())) return dateStr;
                     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
                         ' • ' +
                         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -12650,9 +12659,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             // --- API HANDLER ---
-            async api(action, data = {}) {
+            async api(action, data = {}, silent = false) {
                 if (API_URL === 'PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE') {
-                    this.toast("Error: API URL not configured in code.", 'error');
+                    if (!silent) this.toast("Error: API URL not configured in code.", 'error');
                     return null;
                 }
 
@@ -12671,6 +12680,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     const result = await response.json();
 
                     if (result.status === 'error') {
+                        if (result.message && (result.message.includes('Unauthorized') || result.message.includes('Invalid session'))) {
+                            console.warn('[Security] Session invalid or expired on server. Logging out.');
+                            this.logout();
+                            return null;
+                        }
                         throw new Error(result.message);
                     }
 
@@ -12678,7 +12692,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 } catch (e) {
                     console.error("API Error:", e);
-                    this.toast(e.message || "Connection Failed", 'error');
+                    if (!silent) {
+                        this.toast(e.message || "Connection Failed", 'error');
+                    }
                     return null;
                 }
             },
@@ -12711,107 +12727,75 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             async refreshData(silent = false) {
-                if (!this.user) {
-                    try {
-                        const [resPosts, resSettings] = await Promise.all([
-                            this.api('getPosts'),
-                            this.api('getSettings')
-                        ]);
-                        if (resPosts && resPosts.posts) this.posts = resPosts.posts;
-                        if (resSettings && resSettings.settings) {
-                            this.settings = { ...this.settings, ...resSettings.settings };
-                            this.applySettings();
-                        }
-                    } catch (e) { }
-                    return;
-                }
-
                 if (!silent) this.showLoader(true);
                 try {
-                    const [resUsers, resPosts, resGroups, resRepTypes, resReports, resSettings] = await Promise.all([
-                        this.api('getUsers'),
-                        this.api('getPosts'),
-                        this.api('getGroups'),
-                        this.api('getReportTypes'),
-                        this.api('getReports'),
-                        this.api('getSettings')
-                    ]);
+                    const payload = await this.api('getInitialPayload', {}, silent);
+                    if (payload) {
+                        if (payload.users && Array.isArray(payload.users)) {
+                            this.users = payload.users;
 
-                    if (resUsers) {
-                        this.users = resUsers.users;
-
-                        // SECURITY v3.0.0: Session Integrity Guard
-                        // Cross-check the cached user session against the server-fetched user list.
-                        // This prevents a localStorage tampering attack where a user edits their
-                        // cached session to elevate their role (e.g., setting role to 'Developer').
-                        if (this.user && this.user.id) {
-                            const serverUser = this.users.find(u => String(u.id) === String(this.user.id));
-                            if (serverUser) {
-                                // If the server says the role is different from the cached session, trust the server.
-                                if (serverUser.role !== this.user.role) {
-                                    console.warn('[Security] Session role mismatch detected. Re-syncing from server.');
-                                    this.user = { ...this.user, role: serverUser.role, position: serverUser.position };
-                                    this.saveSession();
+                            // SECURITY v3.0.0: Session Integrity Guard
+                            if (this.user && this.user.id) {
+                                const serverUser = this.users.find(u => String(u.id) === String(this.user.id));
+                                if (serverUser) {
+                                    if (serverUser.role !== this.user.role) {
+                                        console.warn('[Security] Session role mismatch detected. Re-syncing from server.');
+                                        this.user = { ...this.user, role: serverUser.role, position: serverUser.position };
+                                        this.saveSession();
+                                    }
+                                } else {
+                                    console.warn('[Security] Session user not found on server. Logging out.');
+                                    this.logout();
+                                    return;
                                 }
-                            } else {
-                                // User not found on server — session is invalid. Force logout.
-                                console.warn('[Security] Session user not found on server. Logging out.');
-                                this.logout();
-                                return;
                             }
                         }
-                    }
-                    if (resPosts) this.posts = resPosts.posts;
-                    if (resGroups) this.groups = resGroups.groups;
-                    // Merge built-in types with backend types (built-in always present)
-                    const backendTypes = (resRepTypes && resRepTypes.reportTypes) ? resRepTypes.reportTypes : [];
-                    const mergedTypes = [...BUILT_IN_REPORT_TYPES];
-                    backendTypes.forEach(bt => {
-                        if (!mergedTypes.find(m => m.id === bt.id)) mergedTypes.push(bt);
-                        else { /* Backend overrides for built-in (e.g., updated headers) */ const idx = mergedTypes.findIndex(m => m.id === bt.id); if (idx !== -1) mergedTypes[idx] = { ...mergedTypes[idx], ...bt, builtIn: true }; }
-                    });
-                    this.reportTypes = mergedTypes;
-                    if (resReports) this.reports = resReports.reports;
-                    if (resSettings && resSettings.settings) {
-                        this.settings = { ...this.settings, ...resSettings.settings };
-                        this.applySettings();
-                    }
+                        if (payload.posts) this.posts = payload.posts;
+                        if (payload.groups) this.groups = payload.groups;
 
-                    // v4.1.0: Fetch Events (+ Feedback for Dev)
-                    try {
-                        const resEvents = await this.api('getEvents');
-                        if (resEvents && resEvents.events) this.events = resEvents.events;
-                    } catch(e) { console.warn('Events fetch failed', e); }
-                    if (this.isDev()) {
-                        try {
-                            const resFeedback = await this.api('getFeedback');
-                            if (resFeedback && resFeedback.feedback) this.feedback = resFeedback.feedback;
-                        } catch(e) { console.warn('Feedback fetch failed', e); }
-                    }
-
-                    // SWR Caching: Save fresh data to IndexedDB
-                    try {
-                        LocalDB.set('cache', DB_CACHE_DATA, {
-                            users: this.users,
-                            posts: this.posts,
-                            groups: this.groups,
-                            reportTypes: this.reportTypes,
-                            reports: this.reports,
-                            settings: this.settings,
-                            events: this.events
+                        const backendTypes = (payload.reportTypes && Array.isArray(payload.reportTypes)) ? payload.reportTypes : [];
+                        const mergedTypes = [...BUILT_IN_REPORT_TYPES];
+                        backendTypes.forEach(bt => {
+                            if (!mergedTypes.find(m => m.id === bt.id)) mergedTypes.push(bt);
+                            else {
+                                const idx = mergedTypes.findIndex(m => m.id === bt.id);
+                                if (idx !== -1) mergedTypes[idx] = { ...mergedTypes[idx], ...bt, builtIn: true };
+                            }
                         });
-                    } catch (e) { console.warn("Cache save failed", e); }
+                        this.reportTypes = mergedTypes;
 
-                    // Re-render current view if active (to show new data)
-                    const currentRoute = document.querySelector('.nav-btn.active')?.dataset.target || 'home';
-                    if (!silent) {
-                        // Initial load - do nothing specific
-                    } else {
-                        // Background refresh - re-render safe views
-                        if (currentRoute === 'home') this.renderHome(document.getElementById('main-view'));
-                        else if (currentRoute === 'groups') this.renderGroups(document.getElementById('main-view'));
-                        else if (currentRoute === 'reports') this.renderReports(document.getElementById('main-view'));
-                        else if (currentRoute === 'drrm') this.renderDrrm(document.getElementById('main-view'));
+                        if (payload.reports) this.reports = payload.reports;
+                        if (payload.settings) {
+                            this.settings = { ...this.settings, ...payload.settings };
+                            this.applySettings();
+                        }
+                        if (payload.events) this.events = payload.events;
+                        if (payload.feedback) this.feedback = payload.feedback;
+
+                        // SWR Caching: Save fresh data to IndexedDB
+                        try {
+                            LocalDB.set('cache', DB_CACHE_DATA, {
+                                users: this.users,
+                                posts: this.posts,
+                                groups: this.groups,
+                                reportTypes: this.reportTypes,
+                                reports: this.reports,
+                                settings: this.settings,
+                                events: this.events
+                            });
+                        } catch (e) { console.warn("Cache save failed", e); }
+
+                        // Re-render current view if active (to show new data)
+                        const currentRoute = document.querySelector('.nav-btn.active')?.dataset.target || 'home';
+                        if (!silent) {
+                            // Initial load - do nothing specific
+                        } else {
+                            // Background refresh - re-render safe views
+                            if (currentRoute === 'home') this.renderHome(document.getElementById('main-view'));
+                            else if (currentRoute === 'groups') this.renderGroups(document.getElementById('main-view'));
+                            else if (currentRoute === 'reports') this.renderReports(document.getElementById('main-view'));
+                            else if (currentRoute === 'drrm') this.renderDrrm(document.getElementById('main-view'));
+                        }
                     }
 
                 } catch (e) {
@@ -14780,7 +14764,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 // Strictly non-searchable security fields
                 const lockedFields = ['password', 'registrationKey', 'sessionToken', 'tempPassword', 'sysCode'];
 
-                return this.users.filter(u => {
+                return (this.users || []).filter(u => {
                     // Always exclude Dev accounts from public directory unless explicitly searched
                     if (u.role === 'Developer' && query.toLowerCase().trim() !== 'developer') return false;
 
