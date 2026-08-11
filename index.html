@@ -1,7 +1,15 @@
 <!-- 
-    School Portal - v4.3.0
+    School Portal - v4.3.2
 
     CHANGELOG:
+    v4.3.2 (Aug 12, 2026 04:52 AM) - Timezone Date Shift & Selected Date Delete Action [FIX]:
+    - [FIX] Accurate Local Date Normalization: Fixed UTC ISO date string parsing in `normalizeEventDate` so dates like May 20, 2027 do not shift backward to May 19 due to GMT+8 / local timezone offsets.
+    - [FIX] Event Delete & Deselect Filter UI: Added explicit "Delete Event" and "Edit" action buttons to every event listed in the selected date calendar panel, and renamed the "Clear" filter label to "Close Filter" to prevent user confusion.
+
+    v4.3.1 (Aug 12, 2026 04:46 AM) - Calendar Events Rendering & Submission Fix [FIX]:
+    - [FIX] Robust Event Date Parsing: Introduced `normalizeEventDate` and `formatEventDateKey` helpers to correctly handle ISO timestamps (`YYYY-MM-DDT...Z`), local strings, and date formats returned by Google Apps Script backend, preventing invalid date evaluation that hid submitted calendar events.
+    - [FIX] Instant Optimistic Event Display: Updated `saveEvent` to optimistically append/update new calendar events in local state and IndexedDB cache immediately, ensuring events render on the calendar grid and 15-days ahead upcoming list right after submission.
+
     v4.3.0 (Aug 12, 2026 04:24 AM) - Removed Official Slogan Badge Label [FIX]:
     - [FIX] Simplified Slogan Card: Removed the "Official Slogan" badge label from the slogan card in the NEXUS intro overlay as requested, leaving a clean slogan presentation.
 
@@ -15,12 +23,6 @@
     - [FIX] Removed Scroll Instruction & Lock: Removed scroll gating and instruction notice so the close button is immediately active and accessible.
     - [FEAT] Welcoming UI Design: Added friendly welcome badge, high-contrast typography, and smooth action button for guest visitors.
 
-    v4.2.7 (Aug 12, 2026 04:15 AM) - Guest NEXUS Information Overlay [FEAT]:
-    - [FEAT] Daily Guest Intro Overlay: Added a once-per-day introductory overlay modal on the guest landing page for unauthenticated visitors.
-
-    v4.2.6 (Aug 12, 2026 04:02 AM) - Downloadable Masterlist CSV Template [FEAT]:
-    - [FEAT] Download Masterlist Template CSV: Added a one-click template download button in the Import Student Masterlist modal so advisers can fill in and upload their rosters.
-
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
     2. Paste the Web App URL into the `const API_URL` variable inside the script tag below.
@@ -32,7 +34,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.3.0</title>
+    <title>School Portal v4.3.2</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -19736,6 +19738,40 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             // ==========================================
             // v4.1.0: SCHOOL EVENTS CALENDAR WIDGET & 15-DAYS AHEAD LIST
             // ==========================================
+            normalizeEventDate(eventDateStr) {
+                if (!eventDateStr) return null;
+                let str = String(eventDateStr).trim();
+                if (!str) return null;
+
+                // ISO timestamp strings (e.g., "2027-05-19T16:00:00.000Z") or full Date strings
+                if (str.includes('T') || str.includes('Z') || str.includes('GMT') || (str.includes(' ') && !str.match(/^\d{4}-\d{2}-\d{2}$/))) {
+                    const parsed = new Date(str);
+                    if (!isNaN(parsed.getTime())) {
+                        // Extract local year, month, and day in user's browser timezone
+                        return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+                    }
+                }
+
+                // Standard YYYY-MM-DD or YYYY/MM/DD
+                const match = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+                if (match) {
+                    const [_, y, m, d] = match;
+                    return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+                }
+
+                const fallbackDate = new Date(str);
+                if (!isNaN(fallbackDate.getTime())) {
+                    return new Date(fallbackDate.getFullYear(), fallbackDate.getMonth(), fallbackDate.getDate());
+                }
+                return null;
+            },
+
+            formatEventDateKey(eventDateStr) {
+                const d = this.normalizeEventDate(eventDateStr);
+                if (!d) return '';
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            },
+
             renderCalendarWidget() {
                 const month = this.calendarMonth;
                 const year = this.calendarYear;
@@ -19751,8 +19787,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 const eventMap = {};
                 (this.events || []).forEach(evt => {
                     if (!evt.eventDate) return;
-                    const d = new Date(evt.eventDate + 'T00:00:00');
-                    if (d.getMonth() === month && d.getFullYear() === year) {
+                    const d = this.normalizeEventDate(evt.eventDate);
+                    if (d && d.getMonth() === month && d.getFullYear() === year) {
                         const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                         if (!eventMap[key]) eventMap[key] = [];
                         eventMap[key].push(evt);
@@ -19785,17 +19821,22 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 const upcomingEvents = (this.events || []).filter(evt => {
                     if (!evt.eventDate) return false;
-                    const d = new Date(evt.eventDate + 'T00:00:00');
-                    return d >= todayStart && d <= fifteenDaysLater;
-                }).sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+                    const d = this.normalizeEventDate(evt.eventDate);
+                    return d && d >= todayStart && d <= fifteenDaysLater;
+                }).sort((a, b) => {
+                    const dA = this.normalizeEventDate(a.eventDate);
+                    const dB = this.normalizeEventDate(b.eventDate);
+                    return (dA ? dA.getTime() : 0) - (dB ? dB.getTime() : 0);
+                });
 
                 let upcomingHtml = '';
                 if (upcomingEvents.length > 0) {
                     upcomingHtml = upcomingEvents.map(evt => {
-                        const evtDateObj = new Date(evt.eventDate + 'T00:00:00');
+                        const evtDateObj = this.normalizeEventDate(evt.eventDate) || new Date();
                         const monthShort = evtDateObj.toLocaleDateString('en-US', { month: 'short' });
                         const dayNum = evtDateObj.getDate();
                         const dayOfWeek = evtDateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                        const evtFormattedDateStr = this.formatEventDateKey(evt.eventDate);
 
                         return `
                             <div class="bg-gray-50 border border-gray-100 rounded-xl p-2.5 flex items-start gap-2.5 hover:border-brand-200 hover:bg-white transition-all group">
@@ -19806,9 +19847,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-start justify-between gap-1">
                                         <h5 class="text-xs font-bold text-gray-900 truncate group-hover:text-brand-600 transition-colors">${evt.title}</h5>
-                                        ${(this.canManageEvents() && (this.isDev() || this.isPrincipal() || String(evt.userId) === String(this.user.id))) ? `
+                                        ${(this.canManageEvents() && (this.isDev() || this.isPrincipal() || (this.user && String(evt.userId) === String(this.user.id)))) ? `
                                             <div class="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onclick="event.stopPropagation();App.openEventEditor('${evt.eventDate}','${evt.id}')" class="text-gray-400 hover:text-brand-600 p-0.5"><i class="ph ph-pencil-simple text-xs"></i></button>
+                                                <button onclick="event.stopPropagation();App.openEventEditor('${evtFormattedDateStr}','${evt.id}')" class="text-gray-400 hover:text-brand-600 p-0.5"><i class="ph ph-pencil-simple text-xs"></i></button>
                                                 <button onclick="event.stopPropagation();App.deleteEvent('${evt.id}')" class="text-gray-400 hover:text-red-600 p-0.5"><i class="ph ph-trash text-xs"></i></button>
                                             </div>
                                         ` : ''}
@@ -19826,27 +19867,50 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 // Selected date highlight box
                 let selectedDateBox = '';
                 if (selectedDateStr) {
-                    const selDateObj = new Date(selectedDateStr + 'T00:00:00');
-                    const selFormatted = selDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const selDateObj = this.normalizeEventDate(selectedDateStr);
+                    const selFormatted = selDateObj ? selDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : selectedDateStr;
                     if (selectedEvents.length > 0) {
                         selectedDateBox = `
-                            <div class="mb-3 p-3 bg-brand-50/60 border border-brand-200 rounded-xl animate-fade-in">
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <span class="text-xs font-bold text-brand-800">Events on ${selFormatted}</span>
-                                    <button onclick="App.calendarSelectDate(null)" class="text-[10px] text-brand-600 hover:underline">Clear</button>
+                            <div class="mb-3 p-3 bg-brand-50/70 border border-brand-200 rounded-xl animate-fade-in">
+                                <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-brand-200/60">
+                                    <span class="text-xs font-extrabold text-brand-900 flex items-center gap-1.5">
+                                        <i class="ph-fill ph-calendar-blank text-brand-600"></i> Events on ${selFormatted}
+                                    </span>
+                                    <button onclick="App.calendarSelectDate(null)" class="text-[11px] font-bold text-gray-500 hover:text-gray-800 bg-white/80 hover:bg-white px-2 py-0.5 rounded-md border border-gray-200 transition-colors flex items-center gap-1">
+                                        <i class="ph ph-x text-xs"></i> Close Filter
+                                    </button>
                                 </div>
-                                <div class="space-y-1">
-                                    ${selectedEvents.map(evt => `
-                                        <div class="text-xs text-gray-800 font-medium">📌 ${evt.title} ${evt.description ? `<span class="text-gray-500 text-[11px]"> - ${evt.description}</span>` : ''}</div>
-                                    `).join('')}
+                                <div class="space-y-2">
+                                    ${selectedEvents.map(evt => {
+                                        const canManageThisEvt = this.canManageEvents() && (this.isDev() || this.isPrincipal() || (this.user && String(evt.userId) === String(this.user.id)));
+                                        return `
+                                            <div class="p-2.5 bg-white rounded-lg border border-brand-100 shadow-sm flex flex-col gap-1.5">
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <div class="font-bold text-xs text-gray-900 leading-snug">📌 ${evt.title}</div>
+                                                    ${canManageThisEvt ? `
+                                                        <div class="flex items-center gap-1 flex-shrink-0">
+                                                            <button onclick="event.stopPropagation();App.openEventEditor('${selectedDateStr}','${evt.id}')" title="Edit Event" class="text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 p-1 rounded-md transition-colors">
+                                                                <i class="ph-bold ph-pencil-simple text-xs"></i>
+                                                            </button>
+                                                            <button onclick="event.stopPropagation();App.deleteEvent('${evt.id}')" title="Delete Event" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1 rounded-md transition-colors flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold">
+                                                                <i class="ph-bold ph-trash text-xs"></i> Delete
+                                                            </button>
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                                ${evt.description ? `<p class="text-[11px] text-gray-600 leading-relaxed">${evt.description}</p>` : ''}
+                                                <div class="text-[9px] text-gray-400">By ${evt.userName || 'School Event'}</div>
+                                            </div>
+                                        `;
+                                    }).join('')}
                                 </div>
                             </div>
                         `;
                     } else {
                         selectedDateBox = `
-                            <div class="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-xl flex justify-between items-center text-xs animate-fade-in">
+                            <div class="mb-3 p-2.5 bg-gray-50 border border-gray-200 rounded-xl flex justify-between items-center text-xs animate-fade-in">
                                 <span class="text-gray-500 text-[11px]">No events on ${selFormatted}</span>
-                                <button onclick="App.calendarSelectDate(null)" class="text-[10px] text-gray-400 hover:text-gray-600">Clear</button>
+                                <button onclick="App.calendarSelectDate(null)" class="text-[10px] font-bold text-gray-500 hover:text-gray-700">Close Filter</button>
                             </div>
                         `;
                     }
@@ -19899,21 +19963,33 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
             calendarSelectDate(dateStr) {
                 this.calendarSelectedDate = (this.calendarSelectedDate === dateStr) ? null : dateStr;
-                this.renderHome(document.getElementById('main-view'));
+                const mainView = document.getElementById('main-view');
+                if (mainView) {
+                    if (this.user) this.renderHome(mainView);
+                    else this._renderGuestHTML(mainView);
+                }
             },
 
             calendarPrev() {
                 this.calendarMonth--;
                 if (this.calendarMonth < 0) { this.calendarMonth = 11; this.calendarYear--; }
                 this.calendarSelectedDate = null;
-                this.renderHome(document.getElementById('main-view'));
+                const mainView = document.getElementById('main-view');
+                if (mainView) {
+                    if (this.user) this.renderHome(mainView);
+                    else this._renderGuestHTML(mainView);
+                }
             },
 
             calendarNext() {
                 this.calendarMonth++;
                 if (this.calendarMonth > 11) { this.calendarMonth = 0; this.calendarYear++; }
                 this.calendarSelectedDate = null;
-                this.renderHome(document.getElementById('main-view'));
+                const mainView = document.getElementById('main-view');
+                if (mainView) {
+                    if (this.user) this.renderHome(mainView);
+                    else this._renderGuestHTML(mainView);
+                }
             },
 
             openEventEditor(prefillDate, editId) {
@@ -19923,7 +19999,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 }
 
                 const todayStr = new Date().toISOString().split('T')[0];
-                const dateVal = existing ? (existing.eventDate ? new Date(existing.eventDate).toISOString().split('T')[0] : '') : (prefillDate || todayStr);
+                const dateVal = existing ? (existing.eventDate ? this.formatEventDateKey(existing.eventDate) : '') : (prefillDate || todayStr);
 
                 const html = `
                     <div class="max-w-lg mx-auto">
@@ -19971,13 +20047,57 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                     const res = await this.api('saveEvent', data);
                     if (res && res.status === 'success') {
-                        // Refresh events
-                        const evtRes = await this.api('getEvents');
-                        if (evtRes && evtRes.events) this.events = evtRes.events;
+                        // Construct optimistic event entry
+                        const newEvt = {
+                            id: editId || res.id || ('EVT-' + Date.now()),
+                            userId: this.user ? this.user.id : '',
+                            userName: this.user ? `${this.user.firstName} ${this.user.lastName}` : 'School Event',
+                            userRole: this.user ? this.user.role : 'Faculty',
+                            title: data.title,
+                            description: data.description,
+                            eventDate: data.eventDate,
+                            createdAt: new Date().toISOString()
+                        };
+
+                        if (!Array.isArray(this.events)) this.events = [];
+                        if (editId) {
+                            const idx = this.events.findIndex(item => String(item.id) === String(editId));
+                            if (idx !== -1) this.events[idx] = { ...this.events[idx], ...newEvt };
+                            else this.events.push(newEvt);
+                        } else {
+                            this.events.push(newEvt);
+                        }
+
+                        // Try fetching fresh list from API in background to sync backend IDs/fields
+                        try {
+                            const evtRes = await this.api('getEvents', {}, true);
+                            if (evtRes && Array.isArray(evtRes.events) && evtRes.events.length > 0) {
+                                this.events = evtRes.events;
+                            }
+                        } catch(e) {}
+
+                        // Persist to local IndexedDB cache
+                        try {
+                            LocalDB.set('cache', DB_CACHE_DATA, {
+                                users: this.users,
+                                posts: this.posts,
+                                groups: this.groups,
+                                reportTypes: this.reportTypes,
+                                reports: this.reports,
+                                settings: this.settings,
+                                events: this.events
+                            });
+                        } catch(e) {}
 
                         this.toast(editId ? 'Event updated!' : 'Event added to calendar!');
                         this.closeModal();
-                        this.renderHome(document.getElementById('main-view'));
+
+                        // Re-render active view
+                        const mainView = document.getElementById('main-view');
+                        if (mainView) {
+                            if (this.user) this.renderHome(mainView);
+                            else this._renderGuestHTML(mainView);
+                        }
                     } else {
                         throw new Error(res?.message || 'Failed to save event');
                     }
@@ -19993,8 +20113,23 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 try {
                     await this.api('deleteEvent', { id: eventId });
                     this.events = this.events.filter(e => String(e.id) !== String(eventId));
+                    try {
+                        LocalDB.set('cache', DB_CACHE_DATA, {
+                            users: this.users,
+                            posts: this.posts,
+                            groups: this.groups,
+                            reportTypes: this.reportTypes,
+                            reports: this.reports,
+                            settings: this.settings,
+                            events: this.events
+                        });
+                    } catch(e) {}
                     this.toast('Event deleted.');
-                    this.renderHome(document.getElementById('main-view'));
+                    const mainView = document.getElementById('main-view');
+                    if (mainView) {
+                        if (this.user) this.renderHome(mainView);
+                        else this._renderGuestHTML(mainView);
+                    }
                 } catch (e) {
                     this.toast('Failed: ' + e.message, 'error');
                 }
