@@ -1,34 +1,25 @@
 <!-- 
-    School Portal - v4.1.5
+    School Portal - v4.3.0
 
     CHANGELOG:
-    v4.1.5 (Aug 02, 2026 11:25 AM) - Text Character Limits & Input Protection [FEAT]:
-    - [FEAT] Live Character Counters: Enforced 5,000 char limit on Bulletin announcements, 2,000 char limit on Group Chat, 1,000 char limit on Feedback, and 500 char limit on Calendar events.
+    v4.3.0 (Aug 12, 2026 04:24 AM) - Removed Official Slogan Badge Label [FIX]:
+    - [FIX] Simplified Slogan Card: Removed the "Official Slogan" badge label from the slogan card in the NEXUS intro overlay as requested, leaving a clean slogan presentation.
 
-    v4.1.4 (Aug 02, 2026 10:06 AM) - Launch Audit Polish & Safe Guard Checks [FIX]:
-    - [FIX] Date & User Fallbacks: Added NaN checks in formatDate() and null guards in performDirectorySearch() for zero-crash pre-launch reliability.
+    v4.2.9 (Aug 12, 2026 04:20 AM) - Robust Inline CSS Overlay Styling [FIX]:
+    - [FIX] Explicit Inline CSS Styling: Replaced uncompiled Tailwind background gradients with rock-solid inline CSS styles (`linear-gradient`, `#1e1b4b`, `#78350f`, `#0f172a`) ensuring 100% visible high-contrast backgrounds and text.
+    - [FIX] Maximum Contrast Text: Guaranteed white text over dark indigo/amber headers and crisp dark slate text over clean slate cards across all browsers.
+    - [FEAT] Premium Welcoming Design: Styled header, slogan banner, and action button with explicit shadow and border effects.
 
-    v4.1.3 (Aug 02, 2026 09:58 AM) - Fix Pop-up Errors & Single-Fetch Optimization [FIX]:
-    - [FIX] Consolidated API Refresh: Updated `refreshData()` to use `getInitialPayload` single-fetch endpoint, eliminating 8 parallel POST requests that caused GAS script lock timeouts and pop-up errors.
-    - [FIX] Silent Error Suppression: Added `silent` parameter to `api()` to suppress visual error toasts on background auto-refresh network glitches.
-    - [FIX] Automatic Session Guard: Handles unauthorized/invalid session responses cleanly by triggering logout instead of pop-up error loops.
+    v4.2.8 (Aug 12, 2026 04:18 AM) - Enhanced Guest NEXUS Intro Overlay UI [FIX]:
+    - [FIX] High Contrast & Readability Improvements: Fixed text contrast issues on header badges, slogan cards, and background cards so all information is sharp and readable.
+    - [FIX] Removed Scroll Instruction & Lock: Removed scroll gating and instruction notice so the close button is immediately active and accessible.
+    - [FEAT] Welcoming UI Design: Added friendly welcome badge, high-contrast typography, and smooth action button for guest visitors.
 
-    v4.1.2 (Jul 31, 2026 12:55 PM) - Guest View Calendar & Registration Keys API Fix [FEAT & FIX]:
-    - [FEAT] Guest View Calendar: Included the School Calendar & 15-Day Incoming Events sidebar in the public Guest View (`_renderGuestHTML`).
-    - [FIX] Registration Keys API: Added `getRegistrationKeys`, `generateRegistrationKey`, and `revokeRegistrationKey` backend handlers to `code.gs`.
-    - [FEAT] Sidebar Refinements: Grouped FAQ and Downloads under User Guide and placed Feedback side-by-side next to Sign Out button.
+    v4.2.7 (Aug 12, 2026 04:15 AM) - Guest NEXUS Information Overlay [FEAT]:
+    - [FEAT] Daily Guest Intro Overlay: Added a once-per-day introductory overlay modal on the guest landing page for unauthenticated visitors.
 
-    v4.0.4 (Jul 27, 2026 02:27 PM) - Enhanced Personnel Directory Search [FEAT]:
-    - [FEAT] Directory: Upgraded performDirectorySearch() for multi-token keyword searching.
-
-    v4.0.3 (Jul 27, 2026 02:13 PM) - Pure Read-Only Guest Bulletin View [FEAT]:
-    - [FEAT] Guest View: Pure read-only guest bulletin with no interactive elements.
-
-    v4.0.2 (Jul 27, 2026 02:02 PM) - Mobile Back Button & Edge Swipe Gesture Navigation [FEAT]:
-    - [FEAT] Navigation: history.pushState tracking + swipe-back gestures.
-
-    v4.0.1 (Jul 27, 2026 01:57 PM) - KCNHS Connect Branding & Instant Rendering [FEAT]:
-    - [FEAT] Branding: Official KCNHS Connect logo, background, and School Year defaults.
+    v4.2.6 (Aug 12, 2026 04:02 AM) - Downloadable Masterlist CSV Template [FEAT]:
+    - [FEAT] Download Masterlist Template CSV: Added a one-click template download button in the Import Student Masterlist modal so advisers can fill in and upload their rosters.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -41,7 +32,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v3.0.1</title>
+    <title>School Portal v4.3.0</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -12117,7 +12108,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     </button>
                 </div>
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-400 font-medium">School Portal v4.1.1</p>
+                    <p class="text-[10px] text-gray-400 font-medium">School Portal v4.3.0</p>
                     <p class="text-[9px] text-gray-300 mt-0.5">Developed by Rion</p>
                 </div>
             </div>
@@ -12459,6 +12450,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 activeSchoolYear: '2026-2027'
             },
             searchHistory: [], // Initialized in init()
+            sharedStudentAccess: [], // v4.2.3: Data sharing permissions for advisers & staff
+            studentDirectory: [], // v4.2.4: Persistent Student Directory Masterlist
 
             // Pagination state
             postsLimit: 10,
@@ -12526,6 +12519,25 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             const history = await LocalDB.get('cache', 'DIRECTORY_SEARCH_HISTORY') || localStorage.getItem('DIRECTORY_SEARCH_HISTORY');
                             if (history) this.searchHistory = typeof history === 'string' ? JSON.parse(history) : history;
                         } catch (e) { this.searchHistory = []; }
+
+                        try {
+                            const shared = await LocalDB.get('cache', 'STUDENT_SHARED_ACCESS');
+                            if (Array.isArray(shared)) {
+                                this.sharedStudentAccess = shared;
+                            } else {
+                                this.sharedStudentAccess = [];
+                                await LocalDB.set('cache', 'STUDENT_SHARED_ACCESS', this.sharedStudentAccess);
+                            }
+                        } catch (e) { this.sharedStudentAccess = []; }
+
+                        try {
+                            const dir = await LocalDB.get('cache', 'STUDENT_DIRECTORY') || localStorage.getItem('KCNHS_STUDENT_DIRECTORY');
+                            if (dir) {
+                                this.studentDirectory = typeof dir === 'string' ? JSON.parse(dir) : dir;
+                            } else {
+                                this.studentDirectory = [];
+                            }
+                        } catch (e) { this.studentDirectory = []; }
 
                         let initialRoute = window.location.hash.replace('#', '') || 'home';
                         const validRoutes = ['home', 'groups', 'reports', 'directory', 'drrm', 'profile'];
@@ -12639,6 +12651,99 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 const leadsGroup = this.groups && this.groups.some(g => g.leaderId === this.user.id);
                 const explicitRole = (this.user.role === 'Department Head' || this.user.role === 'Leader');
                 return leadsGroup || explicitRole;
+            },
+
+            isAdviser() {
+                if (!this.user) return false;
+                const role = (this.user.role || '').toLowerCase();
+                const pos = (this.user.position || '').toLowerCase();
+                return role.includes('adviser') || pos.includes('adviser') || !!this.user.advisorySection;
+            },
+
+            hasFullStudentAccess() {
+                if (!this.user) return true;
+                const role = (this.user.role || '').toLowerCase();
+                const pos = (this.user.position || '').toLowerCase();
+                return this.isDev() || this.isPrincipal() || this.isDeptHead() || role === 'admin' || role === 'developer' || role === 'principal' || pos.includes('principal') || pos.includes('head');
+            },
+
+            canAccessStudentDirectory() {
+                if (this.hasFullStudentAccess() || this.isAdviser()) return true;
+                const userEmail = (this.user?.email || '').toLowerCase();
+                if (userEmail && Array.isArray(this.sharedStudentAccess)) {
+                    return this.sharedStudentAccess.some(s => (s.recipientEmail || '').toLowerCase() === userEmail);
+                }
+                return false;
+            },
+
+            getAccessibleStudentData() {
+                const allStudents = this.getStudentRecords();
+                const isFullAccess = this.hasFullStudentAccess();
+                const userEmail = (this.user?.email || '').toLowerCase();
+                const userName = (this.user ? `${this.user.firstName || ''} ${this.user.lastName || ''}`.trim() : '').toLowerCase();
+                const advisorySec = (this.user?.advisorySection || '').trim();
+
+                if (isFullAccess) {
+                    const allSections = [...new Set(allStudents.map(s => s.section))].filter(Boolean).sort();
+                    if (advisorySec && !allSections.includes(advisorySec)) allSections.push(advisorySec);
+                    return {
+                        isFullAccess: true,
+                        allowedStudents: allStudents,
+                        accessibleSections: allSections.map(sec => ({ section: sec, type: sec === advisorySec ? 'advisory' : 'full' }))
+                    };
+                }
+
+                const sharedWithUser = (this.sharedStudentAccess || []).filter(s =>
+                    (s.recipientEmail || '').toLowerCase() === userEmail
+                );
+
+                const sharedSectionNames = sharedWithUser
+                    .filter(s => s.shareType === 'section')
+                    .map(s => s.targetValue);
+
+                const sharedLrns = sharedWithUser
+                    .filter(s => s.shareType === 'individual')
+                    .map(s => s.targetValue);
+
+                const allowedStudents = allStudents.filter(s => {
+                    if (advisorySec && s.section.toLowerCase() === advisorySec.toLowerCase()) return true;
+                    if (s.adviser && userName && (s.adviser.toLowerCase().includes(userName) || userName.includes(s.adviser.toLowerCase()))) return true;
+                    if (sharedSectionNames.includes(s.section)) return true;
+                    if (sharedLrns.includes(s.lrn)) return true;
+                    return false;
+                });
+
+                const secMap = new Map();
+                if (advisorySec) secMap.set(advisorySec, 'advisory');
+
+                allStudents.forEach(s => {
+                    const isMine = (advisorySec && s.section.toLowerCase() === advisorySec.toLowerCase()) ||
+                        (s.adviser && userName && s.adviser.toLowerCase().includes(userName));
+                    const isShared = sharedSectionNames.includes(s.section);
+
+                    if (isMine) {
+                        secMap.set(s.section, 'advisory');
+                    } else if (isShared) {
+                        if (!secMap.has(s.section)) secMap.set(s.section, 'shared');
+                    }
+                });
+
+                allowedStudents.forEach(s => {
+                    if (!secMap.has(s.section)) {
+                        secMap.set(s.section, 'shared_student');
+                    }
+                });
+
+                const accessibleSections = Array.from(secMap.entries()).map(([section, type]) => ({
+                    section,
+                    type
+                })).sort((a, b) => a.section.localeCompare(b.section));
+
+                return {
+                    isFullAccess: false,
+                    allowedStudents,
+                    accessibleSections
+                };
             },
 
             canManageUsers() {
@@ -13029,9 +13134,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             // --- SYSTEM OVERLAYS ---
-            openModal(contentHtml) {
+            openModal(contentHtml, sizeClass) {
                 const overlay = document.getElementById('modal-overlay');
                 const content = document.getElementById('modal-content');
+                // Reset and apply optional width override (default: max-w-lg for compact modals)
+                content.className = content.className.replace(/\bmd:max-w-\S+/g, '').trim();
+                content.classList.add('md:' + (sizeClass || 'max-w-lg'));
                 content.innerHTML = contentHtml;
                 overlay.classList.remove('hidden');
                 setTimeout(() => {
@@ -13098,9 +13206,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 this.closeModal();
             },
 
-            compressImage(src, maxWidth = 600, quality = 0.6) {
+            compressImage(src, maxWidth = 800, quality = 0.8) {
                 return new Promise((resolve) => {
                     const img = new Image();
+                    img.crossOrigin = 'Anonymous';
                     img.src = src;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
@@ -13115,7 +13224,49 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
+
+                        const isPng = typeof src === 'string' && (src.startsWith('data:image/png') || src.toLowerCase().includes('.png'));
+
+                        // Smart Black Background Removal (Chroma Keying)
+                        try {
+                            const imgData = ctx.getImageData(0, 0, width, height);
+                            const data = imgData.data;
+
+                            // Check 4 corner pixels (top-left, top-right, bottom-left, bottom-right)
+                            const corners = [
+                                0,                                          // (0,0)
+                                (width - 1) * 4,                            // (width-1, 0)
+                                (height - 1) * width * 4,                   // (0, height-1)
+                                ((height - 1) * width + (width - 1)) * 4    // (width-1, height-1)
+                            ];
+
+                            let blackCorners = 0;
+                            corners.forEach(idx => {
+                                if (data[idx] < 30 && data[idx + 1] < 30 && data[idx + 2] < 30 && data[idx + 3] > 0) {
+                                    blackCorners++;
+                                }
+                            });
+
+                            // If 3 or more corners are pure black, convert solid black background pixels to 100% transparent PNG
+                            if (blackCorners >= 3) {
+                                for (let i = 0; i < data.length; i += 4) {
+                                    if (data[i] < 35 && data[i + 1] < 35 && data[i + 2] < 35) {
+                                        data[i + 3] = 0; // Set Alpha to transparent
+                                    }
+                                }
+                                ctx.putImageData(imgData, 0, 0);
+                                resolve(canvas.toDataURL('image/png'));
+                                return;
+                            }
+                        } catch (err) {
+                            // Cross-origin image fallback
+                        }
+
+                        if (isPng) {
+                            resolve(canvas.toDataURL('image/png'));
+                        } else {
+                            resolve(canvas.toDataURL('image/jpeg', quality));
+                        }
                     };
                     img.onerror = () => resolve(src);
                 });
@@ -13347,6 +13498,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 if (!container) container = document.getElementById('main-view');
 
                 this._renderGuestHTML(container);
+                this.checkNexusIntroOverlay();
 
                 if (!this._guestPostsLoaded && !this._fetchingGuestPosts) {
                     this._fetchingGuestPosts = true;
@@ -13358,7 +13510,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         try {
                             const resEvt = await this.api('getEvents');
                             if (resEvt && resEvt.events) this.events = resEvt.events;
-                        } catch (e) {}
+                        } catch (e) { }
                     } catch (e) {
                         console.warn('Guest posts load failed', e);
                     }
@@ -13371,6 +13523,101 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         this._renderGuestHTML(container);
                     }
                 }
+            },
+
+            checkNexusIntroOverlay() {
+                if (this.user) return; // Do not show for logged in users
+
+                const today = new Date().toISOString().slice(0, 10);
+                const lastShown = localStorage.getItem('NEXUS_INTRO_OVERLAY_LAST_SHOWN');
+
+                if (lastShown !== today) {
+                    setTimeout(() => {
+                        this.showNexusIntroOverlay(today);
+                    }, 400);
+                }
+            },
+
+            showNexusIntroOverlay(todayDateStr) {
+                if (document.getElementById('nexus-intro-modal-overlay')) return;
+
+                const modal = document.createElement('div');
+                modal.id = 'nexus-intro-modal-overlay';
+                modal.style.cssText = 'position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);';
+
+                modal.innerHTML = `
+                    <div style="max-width: 42rem; width: 100%; background-color: #ffffff; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #cbd5e1; overflow: hidden; display: flex; flex-direction: column;">
+                        
+                        <!-- WELCOMING & RICH HEADER BAR -->
+                        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%); padding: 1.75rem; color: #ffffff; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                                <div style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 1.875rem; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                                    <i class="ph-fill ph-hands-clapping"></i>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                        <span style="font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; background-color: #f59e0b; color: #0f172a; padding: 0.2rem 0.6rem; border-radius: 9999px;">System Welcome Overview</span>
+                                        <span style="font-size: 0.7rem; font-weight: 700; color: #93c5fd;">KCNHS Portal</span>
+                                    </div>
+                                    <h3 style="font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; color: #ffffff; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">NEXUS</h3>
+                                    <p style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-top: 0.2rem; margin-bottom: 0;">Centralized School Monitoring, Evaluation & Data Platform</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HIGH CONTRAST READABLE CONTENT BODY -->
+                        <div style="padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; color: #0f172a; font-size: 0.925rem; line-height: 1.65; max-height: 60vh; overflow-y: auto;">
+                            
+                            <!-- PARAGRAPH 1 CARD -->
+                            <div style="padding: 1.25rem; background-color: #f8fafc; border-radius: 1rem; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <p style="margin: 0; color: #0f172a; font-weight: 500; font-size: 0.95rem;">
+                                    <strong style="color: #1d4ed8; font-weight: 900;">NEXUS</strong> is a secure, centralized digital platform engineered to streamline our school's monitoring, evaluation, and data management operations. By transitioning from manual record-keeping to an integrated cloud-based system, the portal consolidates learner profiles, academic performance, attendance records, and school resource inventories into a single, highly accessible interface.
+                                </p>
+                            </div>
+
+                            <!-- PARAGRAPH 2 CARD -->
+                            <div style="padding: 1.25rem; background-color: #f8fafc; border-radius: 1rem; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <p style="margin: 0; color: #1e293b; font-weight: 500; font-size: 0.95rem;">
+                                    Its primary function is to eliminate administrative inefficiencies and ensure strict data accuracy. Ultimately, the system is designed to equip educators and administrators with the real-time, evidence-based insights required to elevate instructional planning, direct targeted interventions, and improve overall student outcomes.
+                                </p>
+                            </div>
+
+                            <!-- READABLE & VIBRANT SLOGAN CARD -->
+                            <div style="background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%); padding: 1.25rem; border-radius: 1rem; color: #ffffff; border: 1px solid #f59e0b; box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3); display: flex; align-items: center; gap: 1.25rem;">
+                                <div style="width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; background-color: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; color: #ffffff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                                    <i class="ph-fill ph-lightbulb"></i>
+                                </div>
+                                <div>
+                                    <p style="font-size: 0.95rem; font-weight: 900; letter-spacing: 0.01em; color: #ffffff; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">NEXUS: New Educational eXcellence through Unified Systems.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FOOTER BAR WITH DIRECT CLOSE BUTTON -->
+                        <div style="padding: 1.25rem 1.75rem; background-color: #f1f5f9; border-top: 1px solid #cbd5e1; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #334155;">
+                                <i class="ph-fill ph-shield-check" style="color: #16a34a; font-size: 1.1rem;"></i> Official School Portal Notice
+                            </div>
+                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" style="background-color: #1d4ed8; color: #ffffff; font-weight: 800; font-size: 0.875rem; padding: 0.85rem 1.75rem; border-radius: 0.85rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35); transition: all 0.2s ease;">
+                                <i class="ph-bold ph-check-circle" style="font-size: 1.1rem;"></i> Explore Portal & Continue
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+            },
+
+            closeNexusIntroOverlay(todayDateStr) {
+                const modal = document.getElementById('nexus-intro-modal-overlay');
+                if (modal) {
+                    modal.classList.add('animate-fade-out');
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 200);
+                }
+                const saveDate = todayDateStr || new Date().toISOString().slice(0, 10);
+                localStorage.setItem('NEXUS_INTRO_OVERLAY_LAST_SHOWN', saveDate);
             },
 
             _renderGuestHTML(container) {
@@ -14472,7 +14719,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     let mediaContent = '';
                     if (post.media) {
                         if (post.mediaType === 'video') mediaContent = `<video src="${this.resolveImageUrl(post.media)}" controls class="w-full rounded-xl mt-3 mb-2 max-h-[450px] object-contain bg-black"></video>`;
-                        else mediaContent = `<div class="rounded-xl overflow-hidden mt-3 mb-2 bg-gray-50 border border-gray-100 flex items-center justify-center p-2 max-h-[450px]"><img src="${this.resolveImageUrl(post.media)}" class="max-h-[430px] w-auto max-w-full object-contain mx-auto"></div>`;
+                        else mediaContent = `<div class="rounded-xl overflow-hidden mt-3 mb-2 bg-white border border-gray-100 flex items-center justify-center p-2 max-h-[450px]"><img src="${this.resolveImageUrl(post.media)}" class="max-h-[430px] w-auto max-w-full object-contain mx-auto"></div>`;
                     }
 
                     return `
@@ -15258,6 +15505,137 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 }).join('');
 
                 const allGroupedCards = groupedCardsHtml + remainingHtml;
+                if (this.activeReportTab === 'students' && !this.canAccessStudentDirectory()) {
+                    this.activeReportTab = 'dashboard';
+                }
+                const activeTab = this.activeReportTab || 'dashboard';
+
+                // ---- STUDENT RECORDS TAB RENDERER (v4.2.3) ----
+                const accessData = this.getAccessibleStudentData();
+                const accessibleSections = accessData.accessibleSections;
+
+                const studentTabContentHtml = `
+                    <div class="space-y-6 animate-fade-in">
+                        <!-- Header & Filter Controls -->
+                        <div class="bg-white p-5 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                            <div class="space-y-1">
+                                <h2 class="text-xl font-black text-gray-900 flex items-center gap-2">
+                                    <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 border border-brand-100 flex items-center justify-center text-lg shadow-2xs">
+                                        <i class="ph-fill ph-student"></i>
+                                    </span>
+                                    Student Data Directory & Masterlists
+                                </h2>
+                                <p class="text-xs text-gray-500 max-w-2xl">
+                                    ${accessData.isFullAccess ? 'Full Administrative Access: View, search, and manage student masterlists across all school sections.' : 'Adviser & Shared Access: View and manage records for your assigned advisory section or records granted via email.'}
+                                </p>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-2 w-full xl:w-auto shrink-0">
+                                <select id="student-section-filter" onchange="App.filterStudentRecords()" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:border-brand-500 transition-all cursor-pointer min-w-[200px] max-w-full">
+                                    <option value="">-- Select Section to View --</option>
+                                    ${accessibleSections.map(s => {
+                    let label = s.section;
+                    if (s.type === 'advisory') label += ' (My Advisory)';
+                    else if (s.type === 'shared') label += ' (Shared Section)';
+                    else if (s.type === 'shared_student') label += ' (Has Shared Student)';
+                    return `<option value="${s.section}">${label}</option>`;
+                }).join('')}
+                                </select>
+
+                                <button onclick="App.openImportMasterlistModal()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl px-3.5 py-2.5 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap" data-tooltip="Import class masterlist from DepEd SF1 or CSV file">
+                                    <i class="ph ph-file-arrow-up text-sm"></i> Import Masterlist
+                                </button>
+                                
+                                <button onclick="App.openAddStudentModal()" class="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold rounded-xl px-3.5 py-2.5 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap" data-tooltip="Register individual student into the section directory">
+                                    <i class="ph ph-user-plus text-sm"></i> Add Student
+                                </button>
+
+                                <button onclick="App.openShareAccessModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl px-3.5 py-2.5 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap" data-tooltip="Share section or student record access with registered DepEd teachers/staff">
+                                    <i class="ph ph-share-network text-sm"></i> Share Access
+                                </button>
+
+                                <button onclick="App.exportStudentRecordsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl px-3.5 py-2.5 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap" data-tooltip="Download masterlist CSV file">
+                                    <i class="ph ph-download-simple text-sm"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Live Search Bar -->
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i>
+                            <input type="text" id="student-search-input" oninput="App.filterStudentRecords()" placeholder="Search student by Name, LRN (e.g. 109876543210), Section, or Gender..." class="w-full bg-white border border-gray-200 rounded-xl pl-12 pr-10 py-3 text-sm focus:ring-2 focus:ring-brand-100 outline-none shadow-sm transition-all">
+                            <button id="student-search-clear" onclick="document.getElementById('student-search-input').value=''; App.filterStudentRecords();" class="hidden absolute right-3.5 top-3 text-gray-400 hover:text-gray-600 text-lg">
+                                <i class="ph ph-x-circle"></i>
+                            </button>
+                        </div>
+
+                        <!-- Quick Stat Badges -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-blue-50/80 p-4 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Loaded Students</p>
+                                    <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm"><i class="ph-fill ph-users"></i></span>
+                                </div>
+                                <h3 class="text-2xl font-black text-blue-900 mt-1" id="stat-total-students">-</h3>
+                                <p class="text-[11px] text-blue-600 mt-0.5 font-medium">On-demand query</p>
+                            </div>
+                            <div class="bg-purple-50/80 p-4 rounded-2xl border border-purple-100 shadow-sm relative overflow-hidden group">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Active Sections</p>
+                                    <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center text-sm"><i class="ph-fill ph-folders"></i></span>
+                                </div>
+                                <h3 class="text-2xl font-black text-purple-900 mt-1" id="stat-active-sections">0 Selected</h3>
+                                <p class="text-[11px] text-purple-600 mt-0.5 font-medium">${accessibleSections.length} section(s) accessible</p>
+                            </div>
+                            <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-100 shadow-sm relative overflow-hidden group">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Report Submissions</p>
+                                    <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center text-sm"><i class="ph-fill ph-file-text"></i></span>
+                                </div>
+                                <h3 class="text-2xl font-black text-amber-900 mt-1" id="stat-total-reports">-</h3>
+                                <p class="text-[11px] text-amber-600 mt-0.5 font-medium">Linked teacher uploads</p>
+                            </div>
+                            <div class="bg-emerald-50/80 p-4 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden group">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Access Scope</p>
+                                    <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="ph-fill ph-shield-check"></i></span>
+                                </div>
+                                <h3 class="text-2xl font-black text-emerald-900 mt-1" id="stat-records-status">${accessData.isFullAccess ? 'Full Access' : 'Restricted'}</h3>
+                                <p class="text-[11px] text-emerald-600 mt-0.5 font-medium">${accessData.isFullAccess ? 'All school sections' : 'Adviser & Shared'}</p>
+                            </div>
+                        </div>
+
+                        <!-- Student Masterlist Table -->
+                        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="ph-fill ph-users-three text-brand-500"></i> Student Roster & Submissions Log
+                                </h4>
+                                <span class="text-xs text-gray-400 font-medium" id="student-count-badge">Ready for search</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead>
+                                        <tr class="bg-gray-100/70 text-gray-600 uppercase font-semibold border-b border-gray-200">
+                                            <th class="py-3 px-4">#</th>
+                                            <th class="py-3 px-4">LRN</th>
+                                            <th class="py-3 px-4">Student Name</th>
+                                            <th class="py-3 px-4">Gender</th>
+                                            <th class="py-3 px-4">Grade & Section</th>
+                                            <th class="py-3 px-4">Adviser</th>
+                                            <th class="py-3 px-4">Submitted Reports</th>
+                                            <th class="py-3 px-4">Status</th>
+                                            <th class="py-3 px-4 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="student-records-table-body" class="divide-y divide-gray-100">
+                                        <!-- Rows auto-populated by App.filterStudentRecords() -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
                 const filteredReports = reportsToProcess.filter(r =>
                     (r.typeLabel || '').toLowerCase().includes(searchTerm) ||
@@ -15268,6 +15646,20 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 container.innerHTML = `
                     <div class="max-w-5xl mx-auto w-full px-5 md:px-0 animate-fade-in">
                         
+                        <!-- VIEW SWITCHER TABS (v4.2.1) -->
+                        <div class="flex items-center gap-2 mb-4 border-b border-gray-200 pb-3">
+                            <button onclick="App.setReportTab('dashboard')" class="px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${activeTab !== 'students' ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                                <i class="ph-fill ph-chart-pie"></i> Reports Overview
+                            </button>
+                            ${this.canAccessStudentDirectory() ? `
+                            <button onclick="App.setReportTab('students')" class="px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${activeTab === 'students' ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                                <i class="ph-fill ph-student"></i> Student Records & Masterlists
+                                <span class="bg-amber-400 text-gray-900 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">Restricted</span>
+                            </button>
+                            ` : ''}
+                        </div>
+
+                        ${activeTab === 'students' ? studentTabContentHtml : `
                         <!-- Search Bar -->
                         <div class="mt-4 relative">
                             <i class="ph ph-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i>
@@ -15340,7 +15732,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         <h3 class="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">Recent Submissions ${searchTerm ? '(Filtered)' : ''}</h3>
                         <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
                             ${filteredReports.length === 0 ? `<div class="p-8 text-center text-gray-400 text-sm">No matching reports found.</div>` :
-                        filteredReports.slice(0, 10).map(r => `
+                            filteredReports.slice(0, 10).map(r => `
                                     <div class="p-4 border-b border-gray-50 flex items-center justify-between last:border-0 hover:bg-gray-50 transition-colors">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600"><i class="ph-fill ph-file-text text-xl"></i></div>
@@ -15361,10 +15753,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             <h3 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2"><i class="ph-fill ph-archive-box text-gray-400 text-lg"></i> Yearly Archives</h3>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 ${[...new Set(archivedReportsBatch.map(r => r.schoolYear))].sort().reverse().map(sy => {
-                            const syReports = archivedReportsBatch.filter(r => r.schoolYear === sy);
-                            const syTotal = syReports.length;
-                            const sySubmitters = new Set(syReports.map(r => r.userId)).size;
-                            return `
+                                const syReports = archivedReportsBatch.filter(r => r.schoolYear === sy);
+                                const syTotal = syReports.length;
+                                const sySubmitters = new Set(syReports.map(r => r.userId)).size;
+                                return `
                                     <div onclick="App.setSchoolYear('${sy}')" class="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden group cursor-pointer hover:bg-gray-100 hover:border-gray-300 transition-all flex flex-col justify-between" data-tooltip="Click to view full dashboard for SY ${sy}">
                                         <div class="absolute right-[-20px] top-[-20px] opacity-10 group-hover:scale-150 transition-transform duration-700">
                                             <i class="ph-fill ph-calendar text-9xl text-gray-400"></i>
@@ -15385,10 +15777,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                             </div>
                                         </div>
                                     </div>`;
-                        }).join('')}
+                            }).join('')}
                             </div>
                         </div>
                         ` : ''}
+                        `}
                     </div>
                 `;
 
@@ -15397,6 +15790,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 if (input && searchTerm) {
                     input.focus();
                     input.setSelectionRange(input.value.length, input.value.length);
+                }
+                if (this.activeReportTab === 'students') {
+                    this.filterStudentRecords();
                 }
             },
 
@@ -15842,67 +16238,214 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             openCreateReportTypeModal(defaultCategory = 'General') {
-                // [UPDATED] Richer Icon Set (Analytics + General + DRRM)
                 const icons = [
                     'ph-chart-bar', 'ph-chart-line-up', 'ph-chart-pie', 'ph-trend-up', 'ph-strategy', 'ph-target', 'ph-file-text',
                     'ph-crosshair', 'ph-presentation-chart', 'ph-chalkboard', 'ph-book-open-text', 'ph-student', 'ph-images', 'ph-graduation-cap',
                     'ph-pencil-simple', 'ph-clipboard-text', 'ph-calendar-check', 'ph-briefcase', 'ph-trophy', 'ph-medal', 'ph-star',
                     'ph-buildings', 'ph-users-three', 'ph-globe', 'ph-files',
-                    // DRRM / Safety
                     'ph-warning', 'ph-siren', 'ph-fire', 'ph-drop', 'ph-wind', 'ph-first-aid'
                 ];
+                const metricPresets = [
+                    { label: 'Learners', metric: 'Total Enrollees', unit: 'learners' },
+                    { label: 'Budget', metric: 'Total Amount', unit: '\u20b1' },
+                    { label: 'Score', metric: 'Average Score', unit: '%' },
+                    { label: 'Incidents', metric: 'Total Cases', unit: 'incidents' },
+                    { label: 'Attendance', metric: 'Total Present', unit: 'persons' },
+                ];
+                const columnPresets = [
+                    { label: '\ud83c\udf93 Student List', cols: ['LRN', 'Student Name', 'Grade & Section', 'Remarks'] },
+                    { label: '\ud83d\udcc5 Attendance', cols: ['Date', 'Name', 'Role', 'Attendance Status'] },
+                    { label: '\ud83d\udea8 DRRM/Safety', cols: ['Incident Date', 'Location', 'Affected Persons', 'Severity'] },
+                    { label: '\ud83d\udcb0 Budget', cols: ['Item', 'Category', 'Amount (\u20b1)', 'Date'] },
+                ];
+                const colorMap = { blue: '#3b82f6', green: '#22c55e', orange: '#f97316', purple: '#a855f7', red: '#ef4444' };
 
                 const html = `
-                    <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold text-gray-900">Define New Report Type</h3><button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200"><i class="ph ph-x"></i></button></div>
-                    
-                    <!-- INTERACTIVE HELPER BOX -->
-                    <div id="create-report-helper" class="hidden mb-6 bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-inner transition-all duration-300 transform origin-top">
-                        <div class="flex gap-3">
-                            <i class="ph-fill ph-info text-blue-500 text-xl mt-0.5"></i>
-                            <div>
-                                <h4 id="helper-title" class="text-sm font-bold text-blue-900 mb-1">Guide</h4>
-                                <p id="helper-desc" class="text-xs text-blue-800 leading-relaxed"></p>
-                            </div>
-                        </div>
+                    <style>
+                        .rt-cat-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:2px solid #e5e7eb;
+                            cursor:pointer;font-size:13px;font-weight:500;color:#6b7280;transition:all 0.15s;background:#fff;width:100%;}
+                        .rt-cat-btn.active-general{border-color:#7c3aed;background:#f5f3ff;color:#6d28d9;}
+                        .rt-cat-btn.active-drrm{border-color:#ef4444;background:#fef2f2;color:#b91c1c;}
+                        .rt-color-dot{width:28px;height:28px;border-radius:50%;border:3px solid transparent;cursor:pointer;
+                            box-shadow:0 1px 3px rgba(0,0,0,.25);transition:all .15s;flex-shrink:0;}
+                        .rt-color-dot.rt-sel{border-color:#1f2937;transform:scale(1.2);}
+                        .rt-icon-cell{width:100%;height:40px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb;
+                            display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:#6b7280;font-size:18px;}
+                        .rt-icon-cell:hover{background:#f3f4f6;}
+                        .rt-icon-cell.rt-sel{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+                        .rt-tag{display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;
+                            border:1px solid #bfdbfe;border-radius:9999px;padding:3px 10px 3px 12px;font-size:12px;font-weight:500;}
+                        .rt-tag button{background:none;border:none;cursor:pointer;color:#93c5fd;font-size:14px;padding:0;margin-left:2px;line-height:1;}
+                        .rt-tag button:hover{color:#1d4ed8;}
+                        #rt_card_preview{border-radius:16px;padding:16px;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:background .3s;}
+                        #rt_tbl{font-size:11px;width:100%;border-collapse:collapse;}
+                        #rt_tbl th,#rt_tbl td{padding:5px 8px;text-align:left;}
+                        #rt_tbl thead tr{background:#f3f4f6;}
+                        #rt_tbl th{font-weight:600;white-space:nowrap;}
+                        #rt_tbl td{border-top:1px solid #f3f4f6;color:#9ca3af;}
+                        @media(max-width:600px){#rt_grid{flex-direction:column!important;}#rt_preview_col{width:100%!important;}}
+                    </style>
+
+                    <!-- HEADER -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                        <h3 style="font-size:15px;font-weight:700;color:#111;display:flex;align-items:center;gap:7px">
+                            <i class="ph-fill ph-plus-circle" style="color:#7c3aed"></i> Define New Report Type
+                        </h3>
+                        <button onclick="App.closeModal()" style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:16px">
+                            <i class="ph ph-x"></i>
+                        </button>
                     </div>
 
-                    <form onsubmit="App.handleCreateReportType(event)" class="space-y-4">
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Report Category</label>
-                            <select name="category" class="input-field" onfocus="App.showCreateHelper('Report Category', 'Groups reports on the dashboard. Use &quot;General&quot; for academics, faculty, or students. Use &quot;DRRM&quot; for safety/incidents.')" onblur="App.hideCreateHelper()">
-                                <option value="General" ${defaultCategory === 'General' ? 'selected' : ''}>General Reporting</option>
-                                <option value="DRRM" ${defaultCategory === 'DRRM' ? 'selected' : ''}>DRRM Incident</option>
-                            </select>
-                        </div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Report Title</label><input type="text" name="label" placeholder="e.g. Quarterly Assessment" class="input-field" required onfocus="App.showCreateHelper('Report Title', 'The main name of the report. This will also be the exact name users MUST use when naming their Excel file uploads (e.g. &quot;Quarterly Assessment.xlsx&quot;).')" onblur="App.hideCreateHelper()"></div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Key Metric Label</label><input type="text" name="metricLabel" placeholder="e.g. Score" class="input-field" required onfocus="App.showCreateHelper('Key Metric Label', 'The primary number this report tracks. Example: &quot;Score&quot;, &quot;Budget&quot;, &quot;Attendees&quot;, or &quot;Total Enrollees&quot;.')" onblur="App.hideCreateHelper()"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label><input type="text" name="unit" placeholder="e.g. Average" class="input-field" required onfocus="App.showCreateHelper('Unit', 'The mathematical description of the metric. Example: &quot;Average&quot;, &quot;Pesos&quot;, &quot;Count&quot;, or &quot;Percentage&quot;.')" onblur="App.hideCreateHelper()"></div>
-                        </div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">CSV Headers (Auto-Total included)</label><input type="text" name="headers" placeholder="Name, Date, Remarks" class="input-field" required onfocus="App.showCreateHelper('CSV Headers', '<b>CRITICAL:</b> These define the columns in the Excel template. Separate them by commas. Example: &quot;Full Name, Grade Level, Test Score, Remarks&quot;. The system will automatically add a &quot;Total&quot; column at the end.')" onblur="App.hideCreateHelper()"><p class="text-[10px] text-gray-400 mt-1">'Total' column is automatically appended by system.</p></div>
-                        <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Color Theme</label><select name="color" class="input-field" onchange="App.showCreateHelper('Color Theme', 'Choose a color that fits the nature of the report. (e.g. Red for Incidents, Green for Financials).')"><option value="blue">Blue</option><option value="green">Green</option><option value="orange">Orange</option><option value="purple">Purple</option><option value="red">Red</option></select></div>
-                        
-                        <!-- Target Audience -->
-                        <div onmouseenter="App.showCreateHelper('Target Audience (Goals)', 'Checking these boxes will make this report appear in the &quot;Required Goals&quot; sidebar for the selected user roles, prompting them to submit it.')" onmouseleave="App.hideCreateHelper()">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Target Audience (Goals)</label>
-                            <div class="grid grid-cols-2 gap-2 text-sm bg-gray-50 p-3 rounded-xl border border-gray-200">
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Faculty" class="rounded text-brand-600 focus:ring-brand-500"> <span>All Faculty</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Class Adviser" class="rounded text-brand-600 focus:ring-brand-500"> <span>Class Advisers</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Floating Teacher" class="rounded text-brand-600 focus:ring-brand-500"> <span>Floating Teachers</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Department Head" class="rounded text-brand-600 focus:ring-brand-500"> <span>Department Heads</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Staff" class="rounded text-brand-600 focus:ring-brand-500"> <span>Staff / Non-Teaching</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="targetAudience" value="Admin" class="rounded text-brand-600 focus:ring-brand-500"> <span>Admin / Principal</span></label>
+                    <!-- TWO-COLUMN FLEX (uses inline style for reliability) -->
+                    <div id="rt_grid" style="display:flex;gap:20px;align-items:flex-start">
+
+                    <!-- ====== LEFT: FORM ====== -->
+                    <div style="flex:1;min-width:0" class="space-y-4">
+
+                        <!-- 1. Category -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Report Category</p>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                                <button type="button" id="rt_cat_general" class="rt-cat-btn active-general" onclick="App._rtSetCategory('General')">
+                                    <i class="ph-fill ph-chart-bar" style="font-size:15px"></i> General Reporting
+                                </button>
+                                <button type="button" id="rt_cat_drrm" class="rt-cat-btn" onclick="App._rtSetCategory('DRRM')">
+                                    <i class="ph-fill ph-siren" style="font-size:15px"></i> DRRM / Incident
+                                </button>
                             </div>
-                            <p class="text-[10px] text-gray-400 mt-1">Users with these roles will see this report as a 'Goal' to complete.</p>
                         </div>
 
-                        <div onmouseenter="App.showCreateHelper('Visual Icon', 'Select an icon that visually represents the data nature. This appears on the Dashboard report card.')" onmouseleave="App.hideCreateHelper()">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Visual Icon</label>
-                            <div class="grid grid-cols-7 gap-2 h-32 overflow-y-auto custom-scroll p-1 border rounded-lg">${icons.map((ic, i) => `<label class="cursor-pointer"><input type="radio" name="icon" value="${ic}" class="peer sr-only" ${i === 0 ? 'checked' : ''}><div class="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center peer-checked:bg-brand-600 peer-checked:text-white peer-checked:border-brand-600 text-gray-500 hover:bg-gray-100 transition-all"><i class="ph-fill ${ic} text-xl"></i></div></label>`).join('')}</div>
+                        <!-- 2. Report Title -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Report Title</p>
+                            <input type="text" id="rt_label" placeholder="e.g. Quarterly Assessment" class="input-field" oninput="App._rtUpdatePreview()">
+                            <p style="font-size:10px;color:#9ca3af;margin-top:3px">Users must include this title in their upload filename.</p>
                         </div>
-                        <button type="submit" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-brand-700">Create Definition</button>
-                    </form>
+
+                        <!-- 3. Key Metric & Unit -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">&#128202; What number are you tracking?</p>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                                ${metricPresets.map(p => `<button type="button" onclick="App._rtFillMetric('${p.metric}','${p.unit}')" style="font-size:11px;padding:3px 12px;border-radius:9999px;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;font-weight:500;transition:all .12s" onmouseover="this.style.background='#ede9fe';this.style.color='#5b21b6'" onmouseout="this.style.background='#f3f4f6';this.style.color=''">${p.label}</button>`).join('')}
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                <div>
+                                    <p style="font-size:10px;color:#9ca3af;margin-bottom:3px">Label (e.g. Total Attendees)</p>
+                                    <input type="text" id="rt_metricLabel" placeholder="e.g. Total Enrollees" class="input-field" oninput="App._rtUpdatePreview()">
+                                </div>
+                                <div>
+                                    <p style="font-size:10px;color:#9ca3af;margin-bottom:3px">Unit (e.g. learners, &#8369;)</p>
+                                    <input type="text" id="rt_unit" placeholder="e.g. learners" class="input-field" oninput="App._rtUpdatePreview()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Column Builder -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">&#128203; Template Columns</p>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center">
+                                <button type="button" onclick="document.getElementById('rt_file_import').click()" style="display:flex;align-items:center;gap:4px;font-size:11px;padding:5px 12px;border-radius:8px;background:#fff;border:1.5px dashed #7c3aed;color:#7c3aed;cursor:pointer;font-weight:600">
+                                    <i class="ph ph-upload-simple"></i> Import from File
+                                </button>
+                                <input type="file" id="rt_file_import" accept=".csv,.xlsx,.xls" style="display:none" onchange="App._rtImportFileHeaders(event)">
+                                ${columnPresets.map(p => `<button type="button" onclick="App._rtApplyColPreset(${JSON.stringify(p.cols)})" style="font-size:11px;padding:3px 10px;border-radius:9999px;background:#f3f4f6;border:1px solid #e5e7eb;cursor:pointer;transition:all .12s" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#f3f4f6'">${p.label}</button>`).join('')}
+                            </div>
+                            <div id="rt_tags_container" style="min-height:44px;display:flex;flex-wrap:wrap;gap:6px;padding:8px;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;cursor:text;transition:border-color .15s" onclick="document.getElementById('rt_tag_input').focus()">
+                                <input id="rt_tag_input" type="text" placeholder="Type column name & press Enter\u2026" style="flex:1;min-width:140px;background:transparent;outline:none;font-size:13px;color:#374151;border:none" onkeydown="App._rtTagKeydown(event)">
+                            </div>
+                            <p style="font-size:10px;color:#9ca3af;margin-top:3px">Press <kbd style="background:#e5e7eb;padding:1px 4px;border-radius:4px;font-size:10px">Enter</kbd> to add. <strong>Total</strong> column auto-added.</p>
+                        </div>
+
+                        <!-- 5. Color Theme -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Color Theme</p>
+                            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+                                ${Object.entries(colorMap).map(([c, hex], i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><div id="rt_color_${c}" class="rt-color-dot${i === 0 ? ' rt-sel' : ''}" style="background:${hex}" onclick="App._rtSetColor('${c}')" title="${c}"></div><span style="font-size:10px;color:#9ca3af;text-transform:capitalize">${c}</span></div>`).join('')}
+                            </div>
+                        </div>
+
+                        <!-- 6. Target Audience -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Target Audience (Goals)</p>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;background:#f9fafb;padding:10px;border-radius:10px;border:1px solid #e5e7eb">
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Faculty"> All Faculty</label>
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Class Adviser"> Class Advisers</label>
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Floating Teacher"> Floating Teachers</label>
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Department Head"> Dept. Heads</label>
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Staff"> Staff / Non-Teaching</label>
+                                <label style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="targetAudience" value="Admin"> Admin / Principal</label>
+                            </div>
+                        </div>
+
+                        <!-- 7. Icon Picker -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Visual Icon</p>
+                            <div id="rt_icon_grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px;max-height:120px;overflow-y:auto;padding:6px;border:1px solid #e5e7eb;border-radius:8px">
+                                ${icons.map((ic, i) => `<div id="rt_ic_${ic.replace(/-/g, '_')}" class="rt-icon-cell${i === 0 ? ' rt-sel' : ''}" onclick="App._rtSetIcon('${ic}')" title="${ic}"><i class="ph-fill ${ic}"></i></div>`).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Submit -->
+                        <button type="button" id="rt_submit_btn" onclick="App._rtSubmitForm()" style="width:100%;background:#7c3aed;color:#fff;font-weight:700;padding:12px;border-radius:12px;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(124,58,237,.3);transition:background .15s" onmouseover="this.style.background='#6d28d9'" onmouseout="this.style.background='#7c3aed'">
+                            <i class="ph ph-check-circle"></i> Create Definition
+                        </button>
+                    </div>
+
+                    <!-- ====== RIGHT: LIVE PREVIEWS (sticky) ====== -->
+                    <div id="rt_preview_col" style="width:260px;flex-shrink:0;position:sticky;top:0;align-self:flex-start" class="space-y-4">
+
+                        <!-- Live Card Preview -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:4px">
+                                <i class="ph ph-eye"></i> Live Card Preview
+                            </p>
+                            <div id="rt_card_preview" style="background:linear-gradient(135deg,#7c3aed,#4c1d95)">
+                                <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                                    <div>
+                                        <p style="font-size:10px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.06em" id="rt_prev_category">General Reporting</p>
+                                        <p style="font-size:24px;font-weight:900;margin-top:4px;line-height:1" id="rt_prev_value">\u2014</p>
+                                        <p style="font-size:11px;opacity:.7;margin-top:2px" id="rt_prev_unit">unit</p>
+                                    </div>
+                                    <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+                                        <i class="ph-fill ph-chart-bar" id="rt_prev_icon"></i>
+                                    </div>
+                                </div>
+                                <p style="font-size:13px;font-weight:600;margin-top:10px;opacity:.9;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" id="rt_prev_label">Report Title</p>
+                            </div>
+                            <p style="font-size:10px;color:#9ca3af;margin-top:4px;text-align:center">How your card looks on the dashboard.</p>
+                        </div>
+
+                        <!-- Template Preview -->
+                        <div>
+                            <p style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:4px">
+                                <i class="ph ph-table"></i> Template Preview
+                            </p>
+                            <div style="border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+                                <div style="overflow-x:auto">
+                                    <table id="rt_tbl">
+                                        <thead><tr id="rt_table_head">
+                                            <th style="color:#9ca3af">#</th>
+                                            <th style="color:#9ca3af;font-style:italic">Add columns\u2026</th>
+                                            <th style="color:#16a34a">Total<span style="font-weight:400;color:#86efac"> (auto)</span></th>
+                                        </tr></thead>
+                                        <tbody id="rt_table_body">
+                                            <tr><td>1</td><td colspan="99" style="font-style:italic;color:#d1d5db">Add columns\u2026</td></tr>
+                                            <tr><td>2</td><td colspan="99" style="color:#d1d5db">\u2026</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <p style="font-size:10px;color:#9ca3af;margin-top:4px;text-align:center">Exact template users will download.</p>
+                        </div>
+
+                    </div>
+                    </div><!-- end rt_grid -->
                 `;
-                this.openModal(html);
+
+                const defCat = defaultCategory || 'General';
+                this.openModal(html, 'max-w-4xl');
+                // Init state AFTER modal is rendered (innerHTML is done, but scripts won't run - we call manually)
+                setTimeout(() => { if (typeof App._rtInit === 'function') App._rtInit(defCat); }, 60);
             },
 
             showCreateHelper(title, description) {
@@ -16124,43 +16667,1136 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 });
             },
 
-            async handleCreateReportType(e) {
-                e.preventDefault();
-                const data = Object.fromEntries(new FormData(e.target));
-                let headersList = data.headers.split(',').map(h => h.trim());
-                if (!headersList.includes('Total')) headersList.push('Total');
+            // ---- Student Data Viewing & Retrieval Methods (v4.2.0) ----
+            activeReportTab: 'dashboard',
 
-                const newType = {
-                    id: 'rt_' + Date.now(),
-                    label: data.label,
-                    metricLabel: data.metricLabel,
-                    unit: data.unit,
-                    headers: headersList,
-                    color: data.color,
-                    icon: data.icon || 'ph-chart-bar',
-                    category: data.category
+            setReportTab(tab) {
+                if (tab === 'students' && !this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: Only Class Advisers, Department Heads, and Principals can view Student Records.', 'error');
+                    this.activeReportTab = 'dashboard';
+                    return;
+                }
+                this.activeReportTab = tab;
+                this.renderReports(document.getElementById('main-view'));
+            },
+
+            async saveStudentDirectory() {
+                try {
+                    await LocalDB.set('cache', 'STUDENT_DIRECTORY', this.studentDirectory);
+                    localStorage.setItem('KCNHS_STUDENT_DIRECTORY', JSON.stringify(this.studentDirectory));
+                } catch (e) {
+                    console.error('Failed to save student directory', e);
+                }
+            },
+
+            getStudentRecords() {
+                // Production-Ready Student Records: Combines persistent local directory + parsed records from submitted reports
+                const recordsMap = new Map();
+
+                // 1. Process persistent student directory (Imported SF1 / manually registered)
+                if (Array.isArray(this.studentDirectory)) {
+                    this.studentDirectory.forEach(s => {
+                        if (!s || !s.lrn) return;
+                        const lrnStr = String(s.lrn).trim();
+                        recordsMap.set(lrnStr, {
+                            lrn: lrnStr,
+                            name: s.name || s.fullname || 'Unknown Student',
+                            section: s.section || 'Unassigned',
+                            adviser: s.adviser || 'Not Assigned',
+                            gender: s.gender || s.sex || 'N/A',
+                            birthday: s.birthday || '',
+                            contact: s.contact || s.parentNo || '',
+                            reports: Array.isArray(s.reports) ? [...s.reports] : [],
+                            status: s.status || 'Active'
+                        });
+                    });
+                }
+
+                // 2. Dynamic extraction from submitted teacher reports (this.reports)
+                if (Array.isArray(this.reports)) {
+                    this.reports.forEach(r => {
+                        if (!r) return;
+                        // Direct student link on report object
+                        if (r.studentLrn && r.studentName) {
+                            const lrn = String(r.studentLrn).trim();
+                            if (!recordsMap.has(lrn)) {
+                                recordsMap.set(lrn, {
+                                    lrn: lrn,
+                                    name: r.studentName,
+                                    section: r.section || 'General',
+                                    adviser: r.user || 'Faculty',
+                                    gender: 'N/A',
+                                    reports: [],
+                                    status: 'Active'
+                                });
+                            }
+                            const record = recordsMap.get(lrn);
+                            record.reports.push({
+                                title: r.typeLabel || 'Report Submission',
+                                date: r.date || 'Recent',
+                                metric: ((r.metricValue || '') + ' ' + (r.unit || '')).trim() || 'Submitted',
+                                submitter: r.user || 'Faculty',
+                                fileUrl: r.fileUrl || '#'
+                            });
+                        }
+
+                        // Also parse rows inside report if r.rows array exists
+                        if (Array.isArray(r.rows)) {
+                            r.rows.forEach(row => {
+                                if (!row) return;
+                                const lrn = String(row.lrn || row.LRN || row['STUDENT NO.'] || '').trim();
+                                const name = row.name || row.fullname || row.FULLNAME || row['STUDENT NAME'] || row.Name;
+                                if (lrn && name) {
+                                    if (!recordsMap.has(lrn)) {
+                                        recordsMap.set(lrn, {
+                                            lrn: lrn,
+                                            name: name,
+                                            section: row.section || row.SECTION || r.section || 'General',
+                                            adviser: row.adviser || row.ADVISER || r.user || 'Faculty',
+                                            gender: row.gender || row.GENDER || row.sex || row.SEX || 'N/A',
+                                            birthday: row.birthday || row.BIRTHDAY || '',
+                                            contact: row['PARENT NO.'] || row['STUDENT NO.'] || '',
+                                            reports: [],
+                                            status: 'Active'
+                                        });
+                                    }
+                                    const record = recordsMap.get(lrn);
+                                    if (!record.reports.some(rep => rep.title === (r.typeLabel || 'Report Submission') && rep.date === r.date)) {
+                                        record.reports.push({
+                                            title: r.typeLabel || 'Report Submission',
+                                            date: r.date || 'Recent',
+                                            metric: ((r.metricValue || '') + ' ' + (r.unit || '')).trim() || 'Submitted',
+                                            submitter: r.user || 'Faculty',
+                                            fileUrl: r.fileUrl || '#'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+
+                return Array.from(recordsMap.values());
+            },
+
+            filterStudentRecords() {
+                const sectionFilter = (document.getElementById('student-section-filter') || {}).value || '';
+                const searchKeyword = (document.getElementById('student-search-input') || {}).value?.toLowerCase().trim() || '';
+                const clearBtn = document.getElementById('student-search-clear');
+                if (clearBtn) {
+                    if (searchKeyword) clearBtn.classList.remove('hidden');
+                    else clearBtn.classList.add('hidden');
+                }
+
+                const accessData = this.getAccessibleStudentData();
+                const candidateStudents = accessData.allowedStudents;
+
+                const tbody = document.getElementById('student-records-table-body');
+                const badge = document.getElementById('student-count-badge');
+                const statTotal = document.getElementById('stat-total-students');
+                const statSections = document.getElementById('stat-active-sections');
+                const statReports = document.getElementById('stat-total-reports');
+                const statStatus = document.getElementById('stat-records-status');
+
+                // ON-DEMAND RETRIEVAL: Only render students when section selected OR search keyword entered
+                const isSearching = (sectionFilter !== '') || (searchKeyword !== '');
+
+                if (!isSearching) {
+                    if (badge) badge.textContent = 'Ready for search';
+                    if (statTotal) statTotal.textContent = '-';
+                    if (statSections) statSections.textContent = '0 Selected';
+                    if (statReports) statReports.textContent = '-';
+                    if (statStatus) statStatus.textContent = accessData.isFullAccess ? 'Full Access' : 'Restricted';
+
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="9" class="py-12 text-center text-gray-500 bg-gray-50/50">
+                                    <div class="max-w-md mx-auto space-y-4">
+                                        <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl shadow-sm border border-brand-100">
+                                            <i class="ph-fill ph-magnifying-glass"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Search or Select a Section</h4>
+                                            <p class="text-xs text-gray-500 leading-relaxed mt-1">
+                                                To avoid slow page loading, student records are loaded on-demand. Select a section from the dropdown above or type a student Name/LRN to retrieve masterlists.
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center justify-center gap-2 pt-1">
+                                            <button onclick="App.openImportMasterlistModal()" class="bg-brand-50 text-brand-700 hover:bg-brand-100 border border-brand-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+                                                <i class="ph ph-file-arrow-up"></i> Import Class Masterlist (CSV)
+                                            </button>
+                                            <button onclick="App.openAddStudentModal()" class="bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+                                                <i class="ph ph-user-plus"></i> Add Student
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    return;
+                }
+
+                // Filter candidate pool by section and search term
+                const filtered = candidateStudents.filter(s => {
+                    const matchSection = (!sectionFilter || s.section === sectionFilter);
+                    const matchSearch = !searchKeyword ||
+                        s.name.toLowerCase().includes(searchKeyword) ||
+                        s.lrn.includes(searchKeyword) ||
+                        s.section.toLowerCase().includes(searchKeyword) ||
+                        (s.gender && s.gender.toLowerCase().includes(searchKeyword)) ||
+                        (s.adviser && s.adviser.toLowerCase().includes(searchKeyword)) ||
+                        (s.status && s.status.toLowerCase().includes(searchKeyword));
+                    return matchSection && matchSearch;
+                });
+
+                const matchingSections = [...new Set(filtered.map(s => s.section))];
+                const matchingReportsCount = filtered.reduce((sum, s) => sum + (s.reports ? s.reports.length : 0), 0);
+
+                if (badge) badge.textContent = `Showing ${filtered.length} matching student${filtered.length === 1 ? '' : 's'}`;
+                if (statTotal) statTotal.textContent = filtered.length;
+                if (statSections) statSections.textContent = matchingSections.length;
+                if (statReports) statReports.textContent = matchingReportsCount;
+                if (statStatus) statStatus.textContent = filtered.length > 0 ? '100% Loaded' : '0%';
+
+                if (tbody) {
+                    if (filtered.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="9" class="py-12 text-center text-gray-400">
+                                    <div class="max-w-md mx-auto space-y-3">
+                                        <i class="ph ph-warning-circle text-4xl text-amber-500 inline-block"></i>
+                                        <h4 class="text-sm font-bold text-gray-800">No matching student records found</h4>
+                                        <p class="text-xs text-gray-500 max-w-sm mx-auto">
+                                            ${accessData.isFullAccess ? 'No records match your selected section or search keywords. You can import a class masterlist or add student records.' : 'Notice: You can only view your assigned advisory section or records explicitly allowed/shared to your DepEd email.'}
+                                        </p>
+                                        <div class="flex items-center justify-center gap-2 pt-2">
+                                            <button onclick="App.openImportMasterlistModal()" class="bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl hover:bg-brand-700 transition-all flex items-center gap-1.5 cursor-pointer">
+                                                <i class="ph ph-file-arrow-up"></i> Import CSV Masterlist
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        tbody.innerHTML = filtered.map((s, i) => {
+                            const genderText = s.gender || 'N/A';
+                            const genderBadge = genderText !== 'N/A'
+                                ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${genderText.toLowerCase().startsWith('m') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-pink-50 text-pink-700 border border-pink-200'}">${genderText}</span>`
+                                : '<span class="text-gray-400">-</span>';
+                            const avatarClass = genderText.toLowerCase().startsWith('f') ? 'bg-pink-100 text-pink-700' : 'bg-brand-100 text-brand-700';
+
+                            return `
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="py-3 px-4 font-mono text-gray-400">${i + 1}</td>
+                                <td class="py-3 px-4 font-mono font-bold text-gray-700">${s.lrn}</td>
+                                <td class="py-3 px-4 font-bold text-gray-900 flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-full ${avatarClass} flex items-center justify-center font-bold text-xs shrink-0">${(s.name || 'S').charAt(0)}</div>
+                                    ${s.name}
+                                </td>
+                                <td class="py-3 px-4">${genderBadge}</td>
+                                <td class="py-3 px-4 text-gray-600 font-medium">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[11px] font-semibold">${s.section}</span>
+                                </td>
+                                <td class="py-3 px-4 text-gray-600 text-xs font-medium">${s.adviser || 'Unassigned'}</td>
+                                <td class="py-3 px-4 font-bold text-brand-600">${s.reports.length} report${s.reports.length === 1 ? '' : 's'}</td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">${s.status || 'Active'}</span>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button onclick="App.openShareAccessModal('individual', '${s.lrn}')" class="text-indigo-600 hover:bg-indigo-50 border border-indigo-100 text-xs font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer" title="Share access to this student record">
+                                            <i class="ph ph-share-network"></i> Share
+                                        </button>
+                                        <button onclick="App.openStudentProfileModal('${s.lrn}')" class="bg-brand-50 text-brand-700 hover:bg-brand-100 border border-brand-200 text-xs font-bold px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer">
+                                            <i class="ph ph-eye"></i> View Profile
+                                        </button>
+                                        ${(this.hasFullStudentAccess() || this.isAdviserOf(s.section)) ? `
+                                        <button onclick="App.deleteStudentRecord('${s.lrn}')" class="text-red-500 hover:bg-red-50 border border-red-100 text-xs font-bold px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer" title="Delete record from directory">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                        ` : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        `}).join('');
+                    }
+                }
+            },
+
+            openStudentProfileModal(lrn) {
+                if (!this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: You are not authorized to view Student Records.', 'error');
+                    return;
+                }
+                const accessData = this.getAccessibleStudentData();
+                const student = accessData.allowedStudents.find(s => s.lrn === lrn);
+                if (!student) { this.toast('Student record not found or access restricted.', 'error'); return; }
+
+                const reportsHtml = (!student.reports || student.reports.length === 0) ? `
+                    <div class="p-4 text-center text-gray-400 italic text-xs">No reports submitted yet for this student.</div>
+                ` : student.reports.map(r => `
+                    <div class="p-3 rounded-xl border border-gray-100 bg-gray-50/70 flex items-center justify-between hover:bg-gray-100/60 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold shrink-0">
+                                <i class="ph-fill ph-file-text"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-900">${r.title} <span class="text-brand-600 font-semibold">(${r.metric})</span></p>
+                                <p class="text-[10px] text-gray-500">Submitted by: ${r.submitter} • ${r.date}</p>
+                            </div>
+                        </div>
+                        <a href="${r.fileUrl}" target="_blank" class="text-[11px] font-bold text-blue-600 bg-white border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1">
+                            <i class="ph ph-file"></i> Open
+                        </a>
+                    </div>
+                `).join('');
+
+                const avatarBg = (student.gender && student.gender.toLowerCase().startsWith('f')) ? 'bg-pink-600' : 'bg-brand-600';
+
+                const html = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl ${avatarBg} text-white flex items-center justify-center font-black text-xl shadow-lg">
+                                ${(student.name || 'S').charAt(0)}
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">${student.name}</h3>
+                                <p class="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                                    <span class="font-mono bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold">LRN: ${student.lrn}</span>
+                                    <span>• ${student.section}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"><i class="ph ph-x"></i></button>
+                    </div>
+
+                    <!-- Profile Meta Badges -->
+                    <div class="grid grid-cols-4 gap-2 mb-5">
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-center">
+                            <p class="text-[10px] font-bold text-blue-400 uppercase">Section</p>
+                            <p class="text-xs font-bold text-blue-900 mt-0.5 truncate">${student.section}</p>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-100 text-center">
+                            <p class="text-[10px] font-bold text-purple-400 uppercase">Adviser</p>
+                            <p class="text-xs font-bold text-purple-900 mt-0.5 truncate">${student.adviser || 'N/A'}</p>
+                        </div>
+                        <div class="bg-pink-50 p-3 rounded-xl border border-pink-100 text-center">
+                            <p class="text-[10px] font-bold text-pink-400 uppercase">Gender</p>
+                            <p class="text-xs font-bold text-pink-900 mt-0.5 truncate">${student.gender || 'N/A'}</p>
+                        </div>
+                        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-center">
+                            <p class="text-[10px] font-bold text-emerald-400 uppercase">Status</p>
+                            <p class="text-xs font-bold text-emerald-900 mt-0.5 truncate">${student.status || 'Active'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Submission History -->
+                    <div class="mb-4">
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="ph-fill ph-clock-counter-clockwise text-brand-600"></i> Linked Teacher Submissions (${student.reports ? student.reports.length : 0})
+                        </h4>
+                        <div class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1">
+                            ${reportsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Modal Actions -->
+                    <div class="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                        <button onclick="App.openShareAccessModal('individual', '${student.lrn}')" class="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer">
+                            <i class="ph ph-share-network"></i> Allow / Share Record
+                        </button>
+                        <button onclick="window.print()" class="bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+                            <i class="ph ph-printer"></i> Print Record
+                        </button>
+                        <button onclick="App.closeModal()" class="bg-brand-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-brand-700 transition-colors cursor-pointer">
+                            Close Profile
+                        </button>
+                    </div>
+                `;
+
+                this.openModal(html, 'max-w-xl');
+            },
+
+            exportStudentRecordsCSV() {
+                if (!this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: You are not authorized to export Student Masterlists.', 'error');
+                    return;
+                }
+
+                const sectionFilter = (document.getElementById('student-section-filter') || {}).value || '';
+                const searchKeyword = (document.getElementById('student-search-input') || {}).value?.toLowerCase().trim() || '';
+
+                if (!sectionFilter && !searchKeyword) {
+                    this.toast('Please select a section or enter a search term before exporting masterlists.', 'warning');
+                    return;
+                }
+
+                const accessData = this.getAccessibleStudentData();
+                const students = accessData.allowedStudents.filter(s => {
+                    const matchSection = (!sectionFilter || s.section === sectionFilter);
+                    const matchSearch = !searchKeyword ||
+                        s.name.toLowerCase().includes(searchKeyword) ||
+                        s.lrn.includes(searchKeyword) ||
+                        s.section.toLowerCase().includes(searchKeyword) ||
+                        (s.gender && s.gender.toLowerCase().includes(searchKeyword)) ||
+                        (s.adviser && s.adviser.toLowerCase().includes(searchKeyword)) ||
+                        (s.status && s.status.toLowerCase().includes(searchKeyword));
+                    return matchSection && matchSearch;
+                });
+
+                if (students.length === 0) { this.toast('No matching student records to export.', 'error'); return; }
+
+                let csv = 'LRN,Student Name,Gender,Grade & Section,Adviser,Total Submissions,Latest Status\n';
+                students.forEach(s => {
+                    csv += `"${s.lrn}","${s.name}","${s.gender || 'N/A'}","${s.section}","${s.adviser || ''}",${s.reports ? s.reports.length : 0},"${s.status || 'Active'}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `KCNHS_Student_Masterlist_${new Date().toISOString().slice(0, 10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.toast(`Exported ${students.length} student record(s) to CSV! 📥`);
+            },
+
+            downloadMasterlistTemplateCSV() {
+                const section = (document.getElementById('import-section-input')?.value || 'Grade 10 - RIZAL').trim();
+                const adviser = (document.getElementById('import-adviser-input')?.value || 'Maria Santos').trim();
+
+                const template = `LRN,FULLNAME,GENDER,SECTION,ADVISER\n109876543210,"Dela Cruz, Juan M.",Male,"${section}","${adviser}"\n109876543211,"Reyes, Ana Maria P.",Female,"${section}","${adviser}"\n109876543212,"Santos, Carlos E.",Male,"${section}","${adviser}"\n`;
+
+                const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `KCNHS_Masterlist_Import_Template.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.toast('Downloaded Masterlist CSV Template! 📄', 'success');
+            },
+
+            // ---- Masterlist Bulk Import & Manual Entry Methods (v4.2.4) ----
+            openImportMasterlistModal() {
+                if (!this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: You are not authorized to import Student Masterlists.', 'error');
+                    return;
+                }
+
+                const advisorySec = (this.user?.advisorySection || '').trim();
+                const defaultAdviser = (this.user ? `${this.user.firstName || ''} ${this.user.lastName || ''}` : '').trim();
+
+                const html = `
+                    <div class="flex justify-between items-start mb-4 pb-3 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                <i class="ph-fill ph-file-arrow-up"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Import Student Masterlist (DepEd SF1 / CSV)</h3>
+                                <p class="text-xs text-gray-500">Upload or paste a CSV list of students to register records into your section directory.</p>
+                            </div>
+                        </div>
+                        <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"><i class="ph ph-x"></i></button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Grade & Section</label>
+                                <input type="text" id="import-section-input" value="${advisorySec}" placeholder="e.g. Grade 10 - Rizal" class="w-full bg-gray-50 border border-gray-200 text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Adviser Name</label>
+                                <input type="text" id="import-adviser-input" value="${defaultAdviser}" placeholder="e.g. Maria Santos" class="w-full bg-gray-50 border border-gray-200 text-xs font-bold rounded-xl px-3 py-2.5 outline-none focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Upload CSV File</label>
+                                <button type="button" onclick="App.downloadMasterlistTemplateCSV()" class="text-[11px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs" data-tooltip="Download pre-formatted CSV template file to fill out in Excel or Google Sheets">
+                                    <i class="ph ph-download-simple text-xs"></i> Download Template CSV
+                                </button>
+                            </div>
+                            <input type="file" id="import-csv-file" accept=".csv,.txt" onchange="App._readCSVFile(this)" class="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+                        </div>
+
+                        <div class="relative flex py-1 items-center">
+                            <div class="flex-grow border-t border-gray-200"></div>
+                            <span class="flex-shrink mx-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">OR Paste Raw CSV Content</span>
+                            <div class="flex-grow border-t border-gray-200"></div>
+                        </div>
+
+                        <div>
+                            <textarea id="import-csv-text" rows="5" placeholder="LRN, FULLNAME, GENDER\n109876543210, Dela Cruz Juan M., Male\n109876543211, Reyes Ana Maria, Female" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-mono focus:ring-2 focus:ring-brand-100 outline-none"></textarea>
+                            <p class="text-[10px] text-gray-400 mt-1">Accepts CSV headers matching DepEd School Form 1 (SF1) or standard LRN, FULLNAME, GENDER columns.</p>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                            <button onclick="App.closeModal()" class="bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                            <button onclick="App.importMasterlistCSV()" class="bg-brand-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-brand-700 transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
+                                <i class="ph ph-check-circle"></i> Import Records
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                this.openModal(html, 'max-w-lg');
+            },
+
+            _readCSVFile(input) {
+                const file = input.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('import-csv-text').value = e.target.result;
+                };
+                reader.readAsText(file);
+            },
+
+            async importMasterlistCSV() {
+                const text = (document.getElementById('import-csv-text')?.value || '').trim();
+                const section = (document.getElementById('import-section-input')?.value || '').trim();
+                const adviser = (document.getElementById('import-adviser-input')?.value || '').trim();
+
+                if (!text) {
+                    this.toast('Please upload or paste CSV content first.', 'warning');
+                    return;
+                }
+
+                const lines = text.split(/\r?\n/).filter(line => line.trim());
+                if (lines.length === 0) {
+                    this.toast('CSV file is empty.', 'error');
+                    return;
+                }
+
+                let importedCount = 0;
+                const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toUpperCase());
+
+                let lrnIdx = headers.findIndex(h => h.includes('LRN') || h.includes('STUDENT NO') || h.includes('ID'));
+                let nameIdx = headers.findIndex(h => h.includes('NAME') || h.includes('FULLNAME') || h.includes('STUDENT'));
+                let genderIdx = headers.findIndex(h => h.includes('GENDER') || h.includes('SEX'));
+                let sectionIdx = headers.findIndex(h => h.includes('SECTION') || h.includes('GRADE'));
+
+                const startIndex = (lrnIdx !== -1 || nameIdx !== -1) ? 1 : 0;
+                if (lrnIdx === -1) lrnIdx = 0;
+                if (nameIdx === -1) nameIdx = 1;
+                if (genderIdx === -1) genderIdx = 2;
+
+                if (!Array.isArray(this.studentDirectory)) this.studentDirectory = [];
+
+                for (let i = startIndex; i < lines.length; i++) {
+                    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                    if (cols.length < 2) continue;
+
+                    const lrn = cols[lrnIdx] || `LRN-${Date.now()}-${i}`;
+                    const name = cols[nameIdx] || 'Unnamed Student';
+                    const gender = (genderIdx !== -1 && cols[genderIdx]) ? cols[genderIdx] : 'N/A';
+                    const rowSec = (sectionIdx !== -1 && cols[sectionIdx]) ? cols[sectionIdx] : (section || 'Unassigned');
+
+                    let existing = this.studentDirectory.find(s => s.lrn === lrn);
+                    if (existing) {
+                        existing.name = name;
+                        existing.gender = gender;
+                        if (section) existing.section = section;
+                        if (adviser) existing.adviser = adviser;
+                    } else {
+                        this.studentDirectory.push({
+                            lrn: lrn,
+                            name: name,
+                            gender: gender,
+                            section: rowSec,
+                            adviser: adviser || 'Faculty Adviser',
+                            reports: [],
+                            status: 'Active'
+                        });
+                    }
+                    importedCount++;
+                }
+
+                await this.saveStudentDirectory();
+                this.closeModal();
+                this.toast(`Successfully imported ${importedCount} student records! 📚`, 'success');
+
+                // Set section dropdown to imported section if available
+                if (section) {
+                    const secFilter = document.getElementById('student-section-filter');
+                    if (secFilter) secFilter.value = section;
+                }
+                this.filterStudentRecords();
+            },
+
+            openAddStudentModal() {
+                if (!this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: You are not authorized to add student records.', 'error');
+                    return;
+                }
+                const advisorySec = (this.user?.advisorySection || '').trim();
+                const defaultAdviser = (this.user ? `${this.user.firstName || ''} ${this.user.lastName || ''}` : '').trim();
+
+                const html = `
+                    <div class="flex justify-between items-start mb-4 pb-3 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                <i class="ph-fill ph-user-plus"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Add Individual Student Record</h3>
+                                <p class="text-xs text-gray-500">Register a student into your section masterlist directory.</p>
+                            </div>
+                        </div>
+                        <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"><i class="ph ph-x"></i></button>
+                    </div>
+
+                    <form onsubmit="App.saveNewStudent(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Learner Reference Number (LRN) *</label>
+                            <input type="text" id="add-student-lrn" required placeholder="12-digit LRN (e.g. 109876543210)" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold focus:border-brand-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Student Full Name (Last Name, First Name M.I.) *</label>
+                            <input type="text" id="add-student-name" required placeholder="e.g. Dela Cruz, Juan M." class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:border-brand-500 outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Gender *</label>
+                                <select id="add-student-gender" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:border-brand-500 outline-none">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Grade & Section *</label>
+                                <input type="text" id="add-student-section" required value="${advisorySec}" placeholder="e.g. Grade 10 - Rizal" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:border-brand-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Class Adviser</label>
+                                <input type="text" id="add-student-adviser" value="${defaultAdviser}" placeholder="e.g. Maria Santos" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:border-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Status / Remarks</label>
+                                <input type="text" id="add-student-status" value="Active" placeholder="Active / Cleared / Enrolled" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-bold focus:border-brand-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                            <button type="button" onclick="App.closeModal()" class="bg-gray-100 text-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-gray-200 transition-colors">Cancel</button>
+                            <button type="submit" class="bg-brand-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-brand-700 transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer">
+                                <i class="ph ph-user-plus"></i> Save Student Record
+                            </button>
+                        </div>
+                    </form>
+                `;
+
+                this.openModal(html, 'max-w-md');
+            },
+
+            async saveNewStudent(e) {
+                e.preventDefault();
+                const lrn = document.getElementById('add-student-lrn')?.value.trim();
+                const name = document.getElementById('add-student-name')?.value.trim();
+                const gender = document.getElementById('add-student-gender')?.value;
+                const section = document.getElementById('add-student-section')?.value.trim();
+                const adviser = document.getElementById('add-student-adviser')?.value.trim();
+                const status = document.getElementById('add-student-status')?.value.trim() || 'Active';
+
+                if (!lrn || !name || !section) {
+                    this.toast('Please fill in all required fields.', 'warning');
+                    return;
+                }
+
+                if (!Array.isArray(this.studentDirectory)) this.studentDirectory = [];
+
+                let existing = this.studentDirectory.find(s => s.lrn === lrn);
+                if (existing) {
+                    existing.name = name;
+                    existing.gender = gender;
+                    existing.section = section;
+                    existing.adviser = adviser;
+                    existing.status = status;
+                    this.toast(`Updated student record for LRN ${lrn}.`);
+                } else {
+                    this.studentDirectory.push({
+                        lrn: lrn,
+                        name: name,
+                        gender: gender,
+                        section: section,
+                        adviser: adviser,
+                        reports: [],
+                        status: status
+                    });
+                    this.toast(`Added new student record: ${name}!`);
+                }
+
+                await this.saveStudentDirectory();
+                this.closeModal();
+                const secFilter = document.getElementById('student-section-filter');
+                if (secFilter) secFilter.value = section;
+                this.filterStudentRecords();
+            },
+
+            async deleteStudentRecord(lrn) {
+                if (!confirm(`Are you sure you want to delete student record LRN ${lrn}?`)) return;
+                if (!Array.isArray(this.studentDirectory)) return;
+
+                this.studentDirectory = this.studentDirectory.filter(s => s.lrn !== lrn);
+                await this.saveStudentDirectory();
+                this.toast(`Student record LRN ${lrn} removed.`);
+                this.filterStudentRecords();
+            },
+
+            isAdviserOf(sectionName) {
+                if (!this.user || !sectionName) return false;
+                const advisory = (this.user.advisorySection || '').trim().toLowerCase();
+                return advisory && advisory === sectionName.toLowerCase();
+            },
+
+            // ---- Data Sharing / Allow Feature Methods (v4.2.3) ----
+            openShareAccessModal(presetType = 'section', presetTarget = '') {
+                if (!this.canAccessStudentDirectory()) {
+                    this.toast('Access Restricted: You must be an authorized teacher or staff to share records.', 'error');
+                    return;
+                }
+
+                const accessData = this.getAccessibleStudentData();
+                const currentUserEmail = (this.user?.email || '').toLowerCase();
+                const isFullAccess = this.hasFullStudentAccess();
+
+                const availableSections = accessData.accessibleSections.map(s => s.section);
+                const availableStudents = accessData.allowedStudents;
+
+                const activeShares = (this.sharedStudentAccess || []).filter(s =>
+                    isFullAccess || (s.grantorEmail || '').toLowerCase() === currentUserEmail
+                );
+
+                const activeSharesHtml = activeShares.length === 0 ? `
+                    <div class="p-4 text-center text-gray-400 italic text-xs bg-gray-50 rounded-xl">No active access permissions granted yet.</div>
+                ` : activeShares.map(s => `
+                    <div class="p-3 rounded-xl border border-gray-100 bg-white flex items-center justify-between shadow-2xs hover:border-indigo-100 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg ${s.shareType === 'section' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'} flex items-center justify-center font-bold text-sm shrink-0">
+                                <i class="${s.shareType === 'section' ? 'ph-fill ph-users-three' : 'ph-fill ph-user'}"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-gray-900">
+                                    ${s.recipientName ? `${s.recipientName} ` : ''}<span class="text-indigo-600 font-mono font-medium">(${s.recipientEmail})</span>
+                                </p>
+                                <p class="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+                                    <span class="inline-block px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-semibold uppercase text-[9px]">${s.shareType}</span>
+                                    <span>• Target: <strong class="text-gray-800">${s.studentName || s.targetValue}</strong></span>
+                                    <span>• Granted: ${s.grantedAt || 'Recently'}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="App.revokeStudentAccess('${s.id}')" class="text-red-500 hover:bg-red-50 border border-red-100 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer">
+                            <i class="ph ph-trash"></i> Revoke
+                        </button>
+                    </div>
+                `).join('');
+
+                const html = `
+                    <div class="flex justify-between items-start mb-4 pb-3 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                <i class="ph-fill ph-share-network"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900">Allow / Share Student Data Access</h3>
+                                <p class="text-xs text-gray-500">Grant specific section or individual student record access to another registered DepEd teacher/staff.</p>
+                            </div>
+                        </div>
+                        <button onclick="App.closeModal()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"><i class="ph ph-x"></i></button>
+                    </div>
+
+                    <form onsubmit="App.grantStudentAccess(event)" class="space-y-4 mb-6 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">1. Select Share Scope</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="shareType" value="section" ${presetType === 'section' ? 'checked' : ''} onchange="App._toggleShareTypeUI()" class="peer hidden">
+                                    <div class="p-3 rounded-xl border border-gray-200 bg-white text-center peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-900 transition-all font-bold text-xs flex items-center justify-center gap-2">
+                                        <i class="ph-fill ph-users-three text-base text-indigo-600"></i> Entire Section (Class)
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="shareType" value="individual" ${presetType === 'individual' ? 'checked' : ''} onchange="App._toggleShareTypeUI()" class="peer hidden">
+                                    <div class="p-3 rounded-xl border border-gray-200 bg-white text-center peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-900 transition-all font-bold text-xs flex items-center justify-center gap-2">
+                                        <i class="ph-fill ph-user text-base text-indigo-600"></i> Individual Student
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Target Selection -->
+                        <div id="share-target-section-container" class="${presetType === 'section' ? '' : 'hidden'}">
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">2. Select Section to Share</label>
+                            <select name="targetSection" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-200">
+                                ${availableSections.map(sec => `<option value="${sec}" ${presetTarget === sec ? 'selected' : ''}>${sec}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div id="share-target-individual-container" class="${presetType === 'individual' ? '' : 'hidden'}">
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">2. Select Student to Share</label>
+                            <select name="targetStudentLrn" class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-indigo-200">
+                                ${availableStudents.map(st => `<option value="${st.lrn}" ${presetTarget === st.lrn ? 'selected' : ''}>${st.name} (LRN: ${st.lrn} • ${st.section})</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <!-- Recipient Email -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">3. Registered DepEd Email Address of Teacher/Staff</label>
+                            <div class="relative">
+                                <i class="ph ph-envelope absolute left-3.5 top-3 text-gray-400 text-sm"></i>
+                                <input type="email" name="recipientEmail" required placeholder="e.g. maria.santos@deped.gov.ph" oninput="App._verifyRecipientEmail(this.value)" class="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-indigo-200 outline-none">
+                            </div>
+                            <p id="share-email-verify-badge" class="text-[11px] text-gray-500 mt-1 font-medium flex items-center gap-1">
+                                <i class="ph ph-info text-indigo-500"></i> Access will be allowed upon matching registered account.
+                            </p>
+                        </div>
+
+                        <div class="pt-2 flex justify-end">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="ph ph-lock-key-open"></i> Grant & Allow Access
+                            </button>
+                        </div>
+                    </form>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="ph-fill ph-shield-check text-emerald-600"></i> Active Access Permissions Granted (${activeShares.length})
+                        </h4>
+                        <div class="space-y-2 max-h-48 overflow-y-auto custom-scroll pr-1">
+                            ${activeSharesHtml}
+                        </div>
+                    </div>
+                `;
+
+                this.openModal(html, 'max-w-xl');
+            },
+
+            _toggleShareTypeUI() {
+                const shareType = document.querySelector('input[name="shareType"]:checked')?.value || 'section';
+                const secCont = document.getElementById('share-target-section-container');
+                const indCont = document.getElementById('share-target-individual-container');
+
+                if (shareType === 'section') {
+                    secCont?.classList.remove('hidden');
+                    indCont?.classList.add('hidden');
+                } else {
+                    secCont?.classList.add('hidden');
+                    indCont?.classList.remove('hidden');
+                }
+            },
+
+            _verifyRecipientEmail(emailVal) {
+                const badge = document.getElementById('share-email-verify-badge');
+                if (!badge) return;
+                const cleanEmail = (emailVal || '').toLowerCase().trim();
+                if (!cleanEmail) {
+                    badge.innerHTML = `<i class="ph ph-info text-indigo-500"></i> Access will be allowed upon matching registered account.`;
+                    return;
+                }
+
+                const matchedUser = (this.users || []).find(u => (u.email || '').toLowerCase() === cleanEmail);
+                if (matchedUser) {
+                    const uName = matchedUser.firstName ? `${matchedUser.firstName} ${matchedUser.lastName}` : (matchedUser.name || 'User');
+                    badge.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i class="ph-fill ph-check-circle text-emerald-500"></i> Verified User: ${uName} (${matchedUser.position || 'Faculty'})</span>`;
+                } else if (cleanEmail.endsWith('@deped.gov.ph')) {
+                    badge.innerHTML = `<span class="text-blue-600 font-medium flex items-center gap-1"><i class="ph ph-envelope-simple-check text-blue-500"></i> Valid DepEd Email (Will grant access upon registration)</span>`;
+                } else {
+                    badge.innerHTML = `<span class="text-amber-600 font-medium flex items-center gap-1"><i class="ph ph-warning text-amber-500"></i> Standard DepEd email recommended (e.g. name@deped.gov.ph)</span>`;
+                }
+            },
+
+            async grantStudentAccess(e) {
+                e.preventDefault();
+                const form = e.target;
+                const shareType = form.shareType.value;
+                const recipientEmail = (form.recipientEmail.value || '').toLowerCase().trim();
+
+                if (!recipientEmail) {
+                    this.toast('Please enter a valid DepEd email address.', 'error');
+                    return;
+                }
+
+                let targetValue = '';
+                let studentName = '';
+
+                if (shareType === 'section') {
+                    targetValue = form.targetSection.value;
+                    if (!targetValue) { this.toast('Please select a section.', 'error'); return; }
+                } else {
+                    targetValue = form.targetStudentLrn.value;
+                    const student = this.getStudentRecords().find(s => s.lrn === targetValue);
+                    if (!student) { this.toast('Selected student record not found.', 'error'); return; }
+                    studentName = student.name;
+                }
+
+                const exists = (this.sharedStudentAccess || []).some(s =>
+                    (s.grantorEmail || '').toLowerCase() === (this.user?.email || '').toLowerCase() &&
+                    (s.recipientEmail || '').toLowerCase() === recipientEmail &&
+                    s.shareType === shareType &&
+                    s.targetValue === targetValue
+                );
+
+                if (exists) {
+                    this.toast('Access has already been granted to this recipient.', 'warning');
+                    return;
+                }
+
+                const matchedUser = (this.users || []).find(u => (u.email || '').toLowerCase() === recipientEmail);
+                const recipientName = matchedUser ? (matchedUser.firstName ? `${matchedUser.firstName} ${matchedUser.lastName}` : matchedUser.name) : recipientEmail.split('@')[0];
+
+                const newShare = {
+                    id: 'share-' + Date.now(),
+                    grantorEmail: (this.user?.email || 'admin@deped.gov.ph').toLowerCase(),
+                    grantorName: this.user ? `${this.user.firstName || ''} ${this.user.lastName || ''}`.trim() : 'Adviser',
+                    recipientEmail,
+                    recipientName,
+                    shareType,
+                    targetValue,
+                    studentName,
+                    grantedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
                 };
 
-                const btn = e.target.querySelector('button[type="submit"]');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Saving...';
+                if (!Array.isArray(this.sharedStudentAccess)) this.sharedStudentAccess = [];
+                this.sharedStudentAccess.unshift(newShare);
 
+                await LocalDB.set('cache', 'STUDENT_SHARED_ACCESS', this.sharedStudentAccess);
+
+                this.toast(`Access Allowed! Granted access for ${shareType === 'section' ? targetValue : studentName} to ${recipientEmail} 🔑`);
+                this.closeModal();
+
+                if (this.activeReportTab === 'students') {
+                    this.renderReports(document.getElementById('main-view'));
+                }
+            },
+
+            async revokeStudentAccess(shareId) {
+                if (!Array.isArray(this.sharedStudentAccess)) return;
+                this.sharedStudentAccess = this.sharedStudentAccess.filter(s => s.id !== shareId);
+                await LocalDB.set('cache', 'STUDENT_SHARED_ACCESS', this.sharedStudentAccess);
+                this.toast('Access permission revoked successfully.', 'info');
+
+                this.openShareAccessModal();
+                if (this.activeReportTab === 'students') {
+                    this.filterStudentRecords();
+                }
+            },
+
+            // ---- Report Type Builder: All helper methods (called from modal onclick handlers) ----
+            _rtInit(defCat) {
+                window._rtColumns = [];
+                window._rtCategory = defCat || 'General';
+                window._rtColorVal = 'blue';
+                window._rtIconVal = 'ph-chart-bar';
+                this._rtSetCategory(window._rtCategory);
+                this._rtRenderTags();
+                this._rtUpdatePreview();
+            },
+
+            _rtSetCategory(cat) {
+                window._rtCategory = cat;
+                const gBtn = document.getElementById('rt_cat_general');
+                const dBtn = document.getElementById('rt_cat_drrm');
+                if (!gBtn || !dBtn) return;
+                gBtn.className = 'rt-cat-btn' + (cat === 'General' ? ' active-general' : '');
+                dBtn.className = 'rt-cat-btn' + (cat === 'DRRM' ? ' active-drrm' : '');
+                this._rtUpdatePreview();
+            },
+
+            _rtSetColor(c) {
+                window._rtColorVal = c;
+                document.querySelectorAll('.rt-color-dot').forEach(d => d.classList.remove('rt-sel'));
+                const dot = document.getElementById('rt_color_' + c);
+                if (dot) dot.classList.add('rt-sel');
+                this._rtUpdatePreview();
+            },
+
+            _rtSetIcon(ic) {
+                window._rtIconVal = ic;
+                document.querySelectorAll('.rt-icon-cell').forEach(d => d.classList.remove('rt-sel'));
+                const cell = document.getElementById('rt_ic_' + ic.replace(/-/g, '_'));
+                if (cell) cell.classList.add('rt-sel');
+                this._rtUpdatePreview();
+            },
+
+            _rtRenderTags() {
+                const container = document.getElementById('rt_tags_container');
+                const input = document.getElementById('rt_tag_input');
+                if (!container || !input) return;
+                container.querySelectorAll('.rt-tag').forEach(t => t.remove());
+                window._rtColumns.forEach((col, i) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'rt-tag';
+                    tag.innerHTML = col + '<button type="button" onclick="App._rtRemoveTag(' + i + ')" title="Remove">\u00d7</button>';
+                    container.insertBefore(tag, input);
+                });
+                this._rtUpdateTablePreview();
+            },
+
+            _rtTagKeydown(e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const val = e.target.value.trim().replace(/,/g, '');
+                    if (val && !window._rtColumns.includes(val)) {
+                        window._rtColumns.push(val);
+                        e.target.value = '';
+                        this._rtRenderTags();
+                    }
+                } else if (e.key === 'Backspace' && e.target.value === '' && window._rtColumns.length > 0) {
+                    window._rtColumns.pop();
+                    this._rtRenderTags();
+                }
+            },
+
+            _rtRemoveTag(i) {
+                window._rtColumns.splice(i, 1);
+                this._rtRenderTags();
+            },
+
+            _rtApplyColPreset(cols) {
+                window._rtColumns = [...cols];
+                this._rtRenderTags();
+                this.toast('Template preset applied!');
+            },
+
+            _rtFillMetric(metric, unit) {
+                const ml = document.getElementById('rt_metricLabel');
+                const u = document.getElementById('rt_unit');
+                if (ml) ml.value = metric;
+                if (u) u.value = unit;
+                this._rtUpdatePreview();
+            },
+
+            _rtUpdatePreview() {
+                const label = (document.getElementById('rt_label') || {}).value || 'Report Title';
+                const metric = (document.getElementById('rt_metricLabel') || {}).value || '\u2014';
+                const unit = (document.getElementById('rt_unit') || {}).value || 'unit';
+                const cat = window._rtCategory || 'General';
+                const color = window._rtColorVal || 'blue';
+                const icon = window._rtIconVal || 'ph-chart-bar';
+                const grads = {
+                    blue: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+                    green: 'linear-gradient(135deg,#22c55e,#15803d)',
+                    orange: 'linear-gradient(135deg,#f97316,#c2410c)',
+                    purple: 'linear-gradient(135deg,#a855f7,#7e22ce)',
+                    red: 'linear-gradient(135deg,#ef4444,#b91c1c)'
+                };
+                const card = document.getElementById('rt_card_preview');
+                if (card) card.style.background = grads[color] || grads.blue;
+                const setT = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                setT('rt_prev_label', label || 'Report Title');
+                setT('rt_prev_value', metric || '\u2014');
+                setT('rt_prev_unit', unit || 'unit');
+                setT('rt_prev_category', cat === 'DRRM' ? 'DRRM / Incident' : 'General Reporting');
+                const iconEl = document.getElementById('rt_prev_icon');
+                if (iconEl) iconEl.className = 'ph-fill ' + icon;
+            },
+
+            _rtUpdateTablePreview() {
+                const head = document.getElementById('rt_table_head');
+                const body = document.getElementById('rt_table_body');
+                if (!head || !body) return;
+                const cols = window._rtColumns;
+                head.innerHTML =
+                    '<th style="color:#9ca3af">#</th>' +
+                    (cols.length === 0
+                        ? '<th style="color:#9ca3af;font-style:italic">Add columns\u2026</th>'
+                        : cols.map(c => '<th>' + c + '</th>').join('')) +
+                    '<th style="color:#16a34a">Total<span style="font-weight:400;color:#86efac"> (auto)</span></th>';
+                body.innerHTML = [1, 2].map(n =>
+                    '<tr><td>' + n + '</td>' +
+                    (cols.length === 0
+                        ? '<td style="color:#d1d5db;font-style:italic">\u2014</td>'
+                        : cols.map(() => '<td>\u2026</td>').join('')) +
+                    '<td style="color:#86efac">0</td></tr>'
+                ).join('');
+            },
+
+            async _rtImportFileHeaders(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'csv') {
+                    const text = await file.text();
+                    const hdrs = text.split(/\r?\n/)[0].split(',').map(h => h.trim().replace(/^"|"$/g, '')).filter(Boolean);
+                    window._rtColumns = hdrs.filter(h => h.toLowerCase() !== 'total');
+                    this._rtRenderTags();
+                    this.toast('\u2705 ' + window._rtColumns.length + ' columns imported from CSV!');
+                } else if (ext === 'xlsx' || ext === 'xls') {
+                    if (window.XLSX) {
+                        const buf = await file.arrayBuffer();
+                        const wb = XLSX.read(buf, { type: 'array' });
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                        const hdrs = (rows[0] || []).map(h => String(h).trim()).filter(Boolean);
+                        window._rtColumns = hdrs.filter(h => h.toLowerCase() !== 'total');
+                        this._rtRenderTags();
+                        this.toast('\u2705 ' + window._rtColumns.length + ' columns imported from Excel!');
+                    } else {
+                        this.toast('\u26a0\ufe0f Save as CSV first, then import.', 'error');
+                    }
+                } else {
+                    this.toast('Please upload a .csv or .xlsx file.', 'error');
+                }
+                event.target.value = '';
+            },
+
+            async _rtSubmitForm() {
+                const label = (document.getElementById('rt_label') || {}).value?.trim();
+                const metricLabel = (document.getElementById('rt_metricLabel') || {}).value?.trim();
+                const unit = (document.getElementById('rt_unit') || {}).value?.trim();
+                const audience = [...document.querySelectorAll('input[name="targetAudience"]:checked')].map(cb => cb.value);
+                if (!label) { this.toast('Please enter a Report Title.', 'error'); return; }
+                if (!metricLabel) { this.toast('Please enter what number you are tracking.', 'error'); return; }
+                if (!unit) { this.toast('Please enter a unit of measurement.', 'error'); return; }
+                if (window._rtColumns.length === 0) { this.toast('Please add at least one column.', 'error'); return; }
+                const headers = [...window._rtColumns];
+                if (!headers.map(h => h.toLowerCase()).includes('total')) headers.push('Total');
+                const newType = {
+                    id: 'rt_' + Date.now(),
+                    label, metricLabel, unit, headers,
+                    color: window._rtColorVal || 'blue',
+                    icon: window._rtIconVal || 'ph-chart-bar',
+                    category: window._rtCategory || 'General',
+                    targetAudience: audience
+                };
+                const btn = document.getElementById('rt_submit_btn');
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Saving...'; }
                 try {
                     await this.api('saveReportType', newType);
                     this.reportTypes.push(newType);
-                    this.toast('New Report Type Added');
+                    this.toast('New Report Type Added \u2705');
+                    window._rtColumns = [];
                     this.closeModal();
-
-                    const currentRoute = document.querySelector('.nav-btn.active')?.dataset.target || 'reports';
-                    if (currentRoute === 'drrm') this.renderDrrm(document.getElementById('main-view'));
+                    const route = document.querySelector('.nav-btn.active')?.dataset.target || 'reports';
+                    if (route === 'drrm') this.renderDrrm(document.getElementById('main-view'));
                     else this.renderReports(document.getElementById('main-view'));
                 } catch (err) {
-                    this.toast('Failed to create definition: ' + err.message, 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
+                    this.toast('Failed: ' + err.message, 'error');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph ph-check-circle"></i> Create Definition'; }
                 }
+            },
+
+            async handleCreateReportType(e) {
+                // This handler is now handled by App._rtSubmitForm() inside the modal.
+                // Kept for backward-compatibility in case it's called externally.
+                if (e && e.preventDefault) e.preventDefault();
+                if (window._rtSubmitForm) App._rtSubmitForm();
             },
 
             openSubmitModal() {
@@ -16901,6 +18537,19 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 const profileComplete = u.profileCompleted;
                 const warningHtml = !profileComplete ? `<div class="bg-red-50 border border-red-100 p-4 rounded-xl mb-6 flex gap-3 animate-fade-in"><i class="ph-fill ph-warning-circle text-red-500 text-xl"></i><div><h4 class="font-bold text-red-700 text-sm">Profile Incomplete</h4><p class="text-red-600 text-xs mt-1">Please complete all required fields below.</p></div></div>` : '';
 
+                // Advisory Section details parsing (Grade + Section Name in ALL CAPS)
+                let curAdvGrade = u.advisoryGrade || '';
+                let curAdvSecName = u.advisorySectionName || '';
+                if (!curAdvGrade && !curAdvSecName && u.advisorySection) {
+                    const match = u.advisorySection.match(/^(Grade\s+\d+|SPED|ALS)\s*-\s*(.*)$/i);
+                    if (match) {
+                        curAdvGrade = match[1];
+                        curAdvSecName = match[2].toUpperCase();
+                    } else {
+                        curAdvSecName = u.advisorySection.toUpperCase();
+                    }
+                }
+
                 // Privacy indicator helper
                 const privateFieldBadge = `<span class="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full"><i class="ph-fill ph-lock-simple text-xs"></i>Private</span>`;
 
@@ -17057,9 +18706,31 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                                 <option value="Staff" ${u.designation === 'Staff' ? 'selected' : ''}>Staff</option>
                                             </select>
                                         </div>
-                                        <div id="adv-sec-group" class="space-y-2" style="display: ${u.designation === 'Class Adviser' ? 'block' : 'none'}">
-                                            <label class="text-xs font-bold text-gray-600 block">Advisory Section</label>
-                                            <input type="text" name="advisorySection" value="${u.advisorySection || ''}" placeholder="e.g. Grade 10 - Ruby" class="input-field text-sm py-2.5">
+                                        <div id="adv-sec-group" class="space-y-3 p-4 bg-gray-50/70 border border-gray-200 rounded-2xl" style="display: ${u.designation === 'Class Adviser' ? 'block' : 'none'}">
+                                            <p class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                                                <i class="ph-fill ph-student text-brand-600"></i> Advisory Section Details
+                                            </p>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Advisory Grade Level *</label>
+                                                    <select id="advisoryGradeInput" name="advisoryGrade" class="input-field text-sm py-2.5 bg-white">
+                                                        <option value="" disabled ${!curAdvGrade ? 'selected' : ''}>-- Select Grade Level --</option>
+                                                        <option value="Grade 7" ${curAdvGrade === 'Grade 7' ? 'selected' : ''}>Grade 7</option>
+                                                        <option value="Grade 8" ${curAdvGrade === 'Grade 8' ? 'selected' : ''}>Grade 8</option>
+                                                        <option value="Grade 9" ${curAdvGrade === 'Grade 9' ? 'selected' : ''}>Grade 9</option>
+                                                        <option value="Grade 10" ${curAdvGrade === 'Grade 10' ? 'selected' : ''}>Grade 10</option>
+                                                        <option value="Grade 11" ${curAdvGrade === 'Grade 11' ? 'selected' : ''}>Grade 11</option>
+                                                        <option value="Grade 12" ${curAdvGrade === 'Grade 12' ? 'selected' : ''}>Grade 12</option>
+                                                        <option value="SPED" ${curAdvGrade === 'SPED' ? 'selected' : ''}>SPED</option>
+                                                        <option value="ALS" ${curAdvGrade === 'ALS' ? 'selected' : ''}>ALS</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Section Name (ALL CAPS) *</label>
+                                                    <input type="text" id="advisorySectionNameInput" name="advisorySectionName" value="${curAdvSecName || ''}" placeholder="e.g. RUBY, RIZAL, DIAMOND" oninput="this.value = this.value.toUpperCase()" class="input-field text-sm py-2.5 uppercase font-bold tracking-wide bg-white">
+                                                    <p class="text-[10px] text-gray-400 mt-1">Converted to ALL CAPS automatically.</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div id="office-task-group" class="space-y-2" style="display: ${u.designation === 'Staff' ? 'block' : 'none'}">
                                             <label class="text-xs font-bold text-gray-600 block">Office & Task</label>
@@ -17067,10 +18738,19 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         </div>
 
                                         <div class="space-y-2">
-                                            <label class="text-xs font-bold text-gray-600 block">Grade Level Handled</label>
-                                            <select name="gradeLevel" class="input-field text-sm py-2.5" required>
-                                                ${gradeLevelOptions.map(opt => `<option value="${opt.value}" ${u.gradeLevel === opt.value || u.gradeLevel === 'Grade ' + opt.value ? 'selected' : ''} ${opt.value === '' ? 'disabled' : ''}>${opt.label}</option>`).join('')}
-                                            </select>
+                                            <label class="text-xs font-bold text-gray-600 block">Grade Level(s) Handled (Select all that apply)</label>
+                                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 bg-gray-50/70 border border-gray-200 rounded-2xl">
+                                                ${['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SPED', 'ALS'].map(gl => {
+                    const userGlStr = Array.isArray(u.gradeLevel) ? u.gradeLevel.join(', ') : (u.gradeLevel || '');
+                    const isChecked = userGlStr.includes(gl);
+                    return `
+                                                        <label class="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-gray-200 hover:border-brand-400 transition-all cursor-pointer select-none shadow-2xs">
+                                                            <input type="checkbox" name="gradeLevelCheckbox" value="${gl}" ${isChecked ? 'checked' : ''} class="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500 cursor-pointer">
+                                                            <span class="text-xs font-bold text-gray-800">${gl}</span>
+                                                        </label>
+                                                    `;
+                }).join('')}
+                                            </div>
                                         </div>
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-gray-100 mt-3">
                                              <div class="space-y-2">
@@ -17658,17 +19338,46 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 let allValid = true;
                 inputs.forEach(input => {
-                    // Exclude password fields from validation in main save
-                    if (input.name === 'newPassword' || input.name === 'confirmPassword') return;
+                    // Exclude special/optional fields from default validation
+                    if (input.name === 'newPassword' || input.name === 'confirmPassword' || input.name === 'gradeLevelCheckbox' || input.name === 'advisoryGrade' || input.name === 'advisorySectionName') return;
                     if (input.required && !input.value.trim()) { allValid = false; input.classList.add('border-red-500'); } else input.classList.remove('border-red-500');
                 });
                 if (!allValid) { this.toast('Please fill in all required fields.', 'error'); return; }
 
                 if (this.tempAvatar) { updated.avatar = this.tempAvatar; this.tempAvatar = null; }
                 inputs.forEach(input => {
-                    // Skip password and readonly fields
-                    if (!input.readOnly && input.name !== 'newPassword' && input.name !== 'confirmPassword') updated[input.name] = input.value;
+                    // Skip password, checkboxes, and special advisory fields
+                    if (!input.readOnly && input.name !== 'newPassword' && input.name !== 'confirmPassword' && input.name !== 'gradeLevelCheckbox' && input.name !== 'advisoryGrade' && input.name !== 'advisorySectionName') {
+                        updated[input.name] = input.value;
+                    }
                 });
+
+                // Collect Multi-Select Grade Levels Handled Checkboxes
+                const checkedGrades = Array.from(document.querySelectorAll('input[name="gradeLevelCheckbox"]:checked')).map(cb => cb.value);
+                updated.gradeLevel = checkedGrades.join(', ');
+
+                // Handle Advisory Section separation & formatting (ALL CAPS for Section Name)
+                if (updated.designation === 'Class Adviser') {
+                    const advGrade = (document.getElementById('advisoryGradeInput')?.value || '').trim();
+                    const advName = (document.getElementById('advisorySectionNameInput')?.value || '').trim().toUpperCase();
+
+                    updated.advisoryGrade = advGrade;
+                    updated.advisorySectionName = advName;
+
+                    if (advGrade && advName) {
+                        updated.advisorySection = `${advGrade} - ${advName}`;
+                    } else if (advName) {
+                        updated.advisorySection = advName;
+                    } else if (advGrade) {
+                        updated.advisorySection = advGrade;
+                    } else {
+                        updated.advisorySection = '';
+                    }
+                } else {
+                    updated.advisorySection = '';
+                    updated.advisoryGrade = '';
+                    updated.advisorySectionName = '';
+                }
 
                 updated.profileCompleted = true;
                 this.user = updated;
@@ -17825,7 +19534,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     document.body.appendChild(a); a.click(); document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     this.toast('Template downloaded!');
-                } catch(e) { this.toast('Download failed: ' + e.message, 'error'); }
+                } catch (e) { this.toast('Download failed: ' + e.message, 'error'); }
             },
             downloadLearnerProfile() { this.toast('Template will be available soon.', 'info'); },
             downloadAttendanceTemplate() { this.toast('Template will be available soon.', 'info'); },
@@ -17899,7 +19608,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     } else {
                         throw new Error(res?.message || 'Failed to submit feedback');
                     }
-                } catch(err) {
+                } catch (err) {
                     this.toast('Failed: ' + err.message, 'error');
                 } finally {
                     btn.disabled = false;
@@ -17959,7 +19668,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     try {
                         await this.api('updateFeedbackStatus', { id: fb.id, status: 'read' });
                         fb.status = 'read';
-                    } catch(e) {}
+                    } catch (e) { }
                 }
 
                 const html = `
@@ -18012,7 +19721,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     if (fb) fb.status = 'resolved';
                     this.toast('Feedback marked as resolved.');
                     this.renderFeedbackInbox();
-                } catch(e) { this.toast('Failed: ' + e.message, 'error'); }
+                } catch (e) { this.toast('Failed: ' + e.message, 'error'); }
             },
 
             async deleteFeedbackItem(fbId) {
@@ -18021,7 +19730,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     this.feedback = this.feedback.filter(f => String(f.id) !== String(fbId));
                     this.toast('Feedback deleted.');
                     this.renderFeedbackInbox();
-                } catch(e) { this.toast('Failed: ' + e.message, 'error'); }
+                } catch (e) { this.toast('Failed: ' + e.message, 'error'); }
             },
 
             // ==========================================
@@ -18030,13 +19739,13 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             renderCalendarWidget() {
                 const month = this.calendarMonth;
                 const year = this.calendarYear;
-                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-                const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
                 const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const today = new Date();
-                const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
                 // Map events for this month
                 const eventMap = {};
@@ -18044,7 +19753,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     if (!evt.eventDate) return;
                     const d = new Date(evt.eventDate + 'T00:00:00');
                     if (d.getMonth() === month && d.getFullYear() === year) {
-                        const key = `${year}-${String(month+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                         if (!eventMap[key]) eventMap[key] = [];
                         eventMap[key].push(evt);
                     }
@@ -18057,7 +19766,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 let calCells = '';
                 for (let i = 0; i < firstDay; i++) calCells += '<div class="h-7"></div>';
                 for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     const hasEvent = eventMap[dateStr] && eventMap[dateStr].length > 0;
                     const isToday = dateStr === todayStr;
                     const isSelected = dateStr === selectedDateStr;
@@ -18272,7 +19981,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     } else {
                         throw new Error(res?.message || 'Failed to save event');
                     }
-                } catch(err) {
+                } catch (err) {
                     this.toast('Failed: ' + err.message, 'error');
                 } finally {
                     btn.disabled = false;
@@ -18286,7 +19995,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     this.events = this.events.filter(e => String(e.id) !== String(eventId));
                     this.toast('Event deleted.');
                     this.renderHome(document.getElementById('main-view'));
-                } catch(e) {
+                } catch (e) {
                     this.toast('Failed: ' + e.message, 'error');
                 }
             }
