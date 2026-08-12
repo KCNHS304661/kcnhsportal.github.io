@@ -1,27 +1,23 @@
 <!-- 
-    School Portal - v4.3.2
+    School Portal - v4.5.0
 
     CHANGELOG:
+    v4.5.0 (Aug 12, 2026 09:12 AM) - Expanded System FAQ Coverage [FEAT]:
+    - [FEAT] Comprehensive FAQ Knowledgebase: Updated renderFAQ to document all recent platform features including NEXUS system overview & slogan, interactive calendar date filtering & event management (edit/delete), offline SWR IndexedDB caching, and optimistic cloud data syncing.
+
+    v4.4.2 (Aug 12, 2026 08:54 AM) - Cleaned Header Badges & Slogan Label [FIX]:
+    - [FIX] Removed Extra Overlay Labels: Removed the "SYSTEM OVERVIEW" and "CLOUD DATA PLATFORM" header badges, and removed the "Official Slogan" text label from the slogan card in the NEXUS intro overlay for a sleek, clutter-free design.
+
+    v4.4.1 (Aug 12, 2026 08:53 AM) - Removed Unnecessary Header Badges [FIX]:
+    - [FIX] Clean Header Layout: Removed the unnecessary "SYSTEM OVERVIEW" and "CLOUD DATA PLATFORM" pill badges from the NEXUS overlay header as requested, leaving a clean brand logo and close button layout.
+
+    v4.4.0 (Aug 12, 2026 08:50 AM) - Ultra-Modern Dark Glassmorphism NEXUS Overlay [FEAT]:
+    - [FEAT] Futuristic Landing Page Overlay Design: Transformed the NEXUS intro overlay into a high-fidelity, ultra-modern dark glassmorphism landing page modal featuring vibrant glowing SVG topography wave contour art inspired by modern digital landing pages.
+    - [FEAT] High-Contrast Typography & Pill UI: Styled hero banner, official slogan card, and action button with glowing electric blue/violet pill controls, gradient typography, and glassmorphic panels while preserving 100% of system overview information.
+
     v4.3.2 (Aug 12, 2026 04:52 AM) - Timezone Date Shift & Selected Date Delete Action [FIX]:
     - [FIX] Accurate Local Date Normalization: Fixed UTC ISO date string parsing in `normalizeEventDate` so dates like May 20, 2027 do not shift backward to May 19 due to GMT+8 / local timezone offsets.
     - [FIX] Event Delete & Deselect Filter UI: Added explicit "Delete Event" and "Edit" action buttons to every event listed in the selected date calendar panel, and renamed the "Clear" filter label to "Close Filter" to prevent user confusion.
-
-    v4.3.1 (Aug 12, 2026 04:46 AM) - Calendar Events Rendering & Submission Fix [FIX]:
-    - [FIX] Robust Event Date Parsing: Introduced `normalizeEventDate` and `formatEventDateKey` helpers to correctly handle ISO timestamps (`YYYY-MM-DDT...Z`), local strings, and date formats returned by Google Apps Script backend, preventing invalid date evaluation that hid submitted calendar events.
-    - [FIX] Instant Optimistic Event Display: Updated `saveEvent` to optimistically append/update new calendar events in local state and IndexedDB cache immediately, ensuring events render on the calendar grid and 15-days ahead upcoming list right after submission.
-
-    v4.3.0 (Aug 12, 2026 04:24 AM) - Removed Official Slogan Badge Label [FIX]:
-    - [FIX] Simplified Slogan Card: Removed the "Official Slogan" badge label from the slogan card in the NEXUS intro overlay as requested, leaving a clean slogan presentation.
-
-    v4.2.9 (Aug 12, 2026 04:20 AM) - Robust Inline CSS Overlay Styling [FIX]:
-    - [FIX] Explicit Inline CSS Styling: Replaced uncompiled Tailwind background gradients with rock-solid inline CSS styles (`linear-gradient`, `#1e1b4b`, `#78350f`, `#0f172a`) ensuring 100% visible high-contrast backgrounds and text.
-    - [FIX] Maximum Contrast Text: Guaranteed white text over dark indigo/amber headers and crisp dark slate text over clean slate cards across all browsers.
-    - [FEAT] Premium Welcoming Design: Styled header, slogan banner, and action button with explicit shadow and border effects.
-
-    v4.2.8 (Aug 12, 2026 04:18 AM) - Enhanced Guest NEXUS Intro Overlay UI [FIX]:
-    - [FIX] High Contrast & Readability Improvements: Fixed text contrast issues on header badges, slogan cards, and background cards so all information is sharp and readable.
-    - [FIX] Removed Scroll Instruction & Lock: Removed scroll gating and instruction notice so the close button is immediately active and accessible.
-    - [FEAT] Welcoming UI Design: Added friendly welcome badge, high-contrast typography, and smooth action button for guest visitors.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -34,7 +30,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.3.2</title>
+    <title>School Portal v4.5.0</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -13545,63 +13541,106 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 const modal = document.createElement('div');
                 modal.id = 'nexus-intro-modal-overlay';
-                modal.style.cssText = 'position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background-color: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);';
+                modal.style.cssText = 'position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background-color: rgba(5, 5, 12, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: fadeIn 0.4s ease-out;';
 
                 modal.innerHTML = `
-                    <div style="max-width: 42rem; width: 100%; background-color: #ffffff; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #cbd5e1; overflow: hidden; display: flex; flex-direction: column;">
+                    <div id="nexus-intro-modal-card" style="max-width: 58rem; width: 100%; background: #080811; border-radius: 2rem; border: 1px solid rgba(139, 92, 246, 0.35); box-shadow: 0 0 60px rgba(99, 102, 241, 0.25), 0 30px 70px -15px rgba(0, 0, 0, 0.95); overflow: hidden; position: relative; display: flex; flex-direction: column; color: #ffffff; font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;">
                         
-                        <!-- WELCOMING & RICH HEADER BAR -->
-                        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e40af 100%); padding: 1.75rem; color: #ffffff; position: relative;">
-                            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                                <div style="width: 3.5rem; height: 3.5rem; border-radius: 1rem; background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 1.875rem; flex-shrink: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
-                                    <i class="ph-fill ph-hands-clapping"></i>
+                        <!-- HIGH-FIDELITY TOPOGRAPHY CONTOUR SVG ART (MATCHING IMAGE 1) -->
+                        <svg class="nexus-topo-bg" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg" style="position: absolute; right: -50px; top: -50px; width: 560px; height: 560px; opacity: 0.45; pointer-events: none; z-index: 1;">
+                            <defs>
+                                <linearGradient id="topoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#38bdf8" />
+                                    <stop offset="35%" stop-color="#818cf8" />
+                                    <stop offset="70%" stop-color="#c084fc" />
+                                    <stop offset="100%" stop-color="#f43f5e" />
+                                </linearGradient>
+                                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="6" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                            <path d="M 400 100 C 550 80 700 180 680 340 C 660 500 500 550 380 480 C 260 410 280 260 340 180 Z" stroke="url(#topoGrad)" stroke-width="2" filter="url(#glow)" />
+                            <path d="M 420 130 C 540 115 660 200 645 330 C 630 460 490 505 395 450 C 300 395 315 275 365 200 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.9" />
+                            <path d="M 440 160 C 530 150 620 220 610 320 C 600 420 480 460 410 420 C 340 380 350 290 390 220 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.8" />
+                            <path d="M 460 190 C 520 185 580 240 575 310 C 570 380 470 415 425 390 C 380 365 385 305 415 250 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.7" />
+                            <path d="M 480 220 C 510 215 545 255 540 300 C 535 345 465 370 435 355 C 405 340 410 310 435 270 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.6" />
+                            <path d="M 495 245 C 515 240 525 270 520 290 C 515 310 475 325 455 315 C 435 305 440 285 460 260 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.5" />
+                            <path d="M 200 350 C 300 330 400 400 380 500 C 360 600 240 620 160 560 C 80 500 100 400 150 370 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.75" />
+                            <path d="M 215 375 C 290 360 370 415 355 490 C 340 565 245 580 180 535 C 115 490 130 415 170 390 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.65" />
+                            <path d="M 230 400 C 280 390 340 430 330 480 C 320 530 250 540 200 510 C 150 480 160 430 190 410 Z" stroke="url(#topoGrad)" stroke-width="2" opacity="0.55" />
+                        </svg>
+
+                        <!-- SLEEK NAV HEADER (MATCHING IMAGE 1 BRAND) -->
+                        <div style="padding: 1.5rem 2.25rem 1rem 2.25rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); z-index: 10; position: relative; background: rgba(12, 12, 24, 0.6); backdrop-filter: blur(10px);">
+                            <div style="display: flex; align-items: center; gap: 0.85rem;">
+                                <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 1.35rem; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);">
+                                    <i class="ph-fill ph-circles-three-plus"></i>
                                 </div>
                                 <div>
-                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                        <span style="font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; background-color: #f59e0b; color: #0f172a; padding: 0.2rem 0.6rem; border-radius: 9999px;">System Welcome Overview</span>
-                                        <span style="font-size: 0.7rem; font-weight: 700; color: #93c5fd;">KCNHS Portal</span>
-                                    </div>
-                                    <h3 style="font-size: 1.5rem; font-weight: 900; letter-spacing: -0.02em; color: #ffffff; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">NEXUS</h3>
-                                    <p style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-top: 0.2rem; margin-bottom: 0;">Centralized School Monitoring, Evaluation & Data Platform</p>
+                                    <div style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: #a855f7;">KCNHS PORTAL</div>
+                                    <div style="font-size: 1.15rem; font-weight: 900; letter-spacing: -0.02em; color: #ffffff;">NEXUS</div>
                                 </div>
                             </div>
+
+                            <!-- CLOSE BUTTON -->
+                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" style="width: 2.25rem; height: 2.25rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.color='#ffffff';this.style.background='rgba(255,255,255,0.18)';" onmouseout="this.style.color='#94a3b8';this.style.background='rgba(255,255,255,0.08)';">
+                                <i class="ph ph-x" style="font-size: 1.1rem;"></i>
+                            </button>
                         </div>
 
-                        <!-- HIGH CONTRAST READABLE CONTENT BODY -->
-                        <div style="padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; color: #0f172a; font-size: 0.925rem; line-height: 1.65; max-height: 60vh; overflow-y: auto;">
+                        <!-- MAIN HERO CONTENT SECTION -->
+                        <div style="padding: 2.25rem; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 1.5rem; max-height: 65vh; overflow-y: auto;">
                             
-                            <!-- PARAGRAPH 1 CARD -->
-                            <div style="padding: 1.25rem; background-color: #f8fafc; border-radius: 1rem; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                <p style="margin: 0; color: #0f172a; font-weight: 500; font-size: 0.95rem;">
-                                    <strong style="color: #1d4ed8; font-weight: 900;">NEXUS</strong> is a secure, centralized digital platform engineered to streamline our school's monitoring, evaluation, and data management operations. By transitioning from manual record-keeping to an integrated cloud-based system, the portal consolidates learner profiles, academic performance, attendance records, and school resource inventories into a single, highly accessible interface.
-                                </p>
+                            <!-- HERO HEADING & TAGLINE -->
+                            <div>
+                                <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.3rem 0.85rem; border-radius: 9999px; margin-bottom: 0.85rem;">
+                                    <span style="width: 6px; height: 6px; border-radius: 9999px; background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></span> Centralized School Monitoring, Evaluation & Data Platform
+                                </div>
+                                <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.03em; color: #ffffff; line-height: 1.1; margin: 0;">
+                                    Welcome to <span style="background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NEXUS.</span>
+                                </h1>
                             </div>
 
-                            <!-- PARAGRAPH 2 CARD -->
-                            <div style="padding: 1.25rem; background-color: #f8fafc; border-radius: 1rem; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                <p style="margin: 0; color: #1e293b; font-weight: 500; font-size: 0.95rem;">
-                                    Its primary function is to eliminate administrative inefficiencies and ensure strict data accuracy. Ultimately, the system is designed to equip educators and administrators with the real-time, evidence-based insights required to elevate instructional planning, direct targeted interventions, and improve overall student outcomes.
-                                </p>
-                            </div>
-
-                            <!-- READABLE & VIBRANT SLOGAN CARD -->
-                            <div style="background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%); padding: 1.25rem; border-radius: 1rem; color: #ffffff; border: 1px solid #f59e0b; box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3); display: flex; align-items: center; gap: 1.25rem;">
-                                <div style="width: 2.75rem; height: 2.75rem; border-radius: 0.75rem; background-color: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; color: #ffffff; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                            <!-- SLOGAN BANNER CARD -->
+                            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(217, 119, 6, 0.08) 100%); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 1.25rem; padding: 1.15rem 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);">
+                                <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: #000000; font-size: 1.35rem; flex-shrink: 0; font-weight: 900; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);">
                                     <i class="ph-fill ph-lightbulb"></i>
                                 </div>
                                 <div>
-                                    <p style="font-size: 0.95rem; font-weight: 900; letter-spacing: 0.01em; color: #ffffff; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.4);">NEXUS: New Educational eXcellence through Unified Systems.</p>
+                                    <p style="font-size: 0.95rem; font-weight: 800; color: #fef08a; margin: 0; line-height: 1.4;">
+                                        NEXUS: New Educational eXcellence through Unified Systems.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- HIGH CONTRAST INFORMATIONAL PANELS (UNALTERED TEXT) -->
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 1.25rem;">
+                                
+                                <!-- PARAGRAPH 1 CARD -->
+                                <div style="background: rgba(15, 15, 28, 0.75); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border-radius: 1.25rem; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);">
+                                    <p style="margin: 0; color: #e2e8f0; font-weight: 400; font-size: 0.95rem; line-height: 1.7;">
+                                        <strong style="color: #60a5fa; font-weight: 800;">NEXUS</strong> is a secure, centralized digital platform engineered to streamline our school's monitoring, evaluation, and data management operations. By transitioning from manual record-keeping to an integrated cloud-based system, the portal consolidates learner profiles, academic performance, attendance records, and school resource inventories into a single, highly accessible interface.
+                                    </p>
+                                </div>
+
+                                <!-- PARAGRAPH 2 CARD -->
+                                <div style="background: rgba(15, 15, 28, 0.75); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); border-radius: 1.25rem; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);">
+                                    <p style="margin: 0; color: #cbd5e1; font-weight: 400; font-size: 0.95rem; line-height: 1.7;">
+                                        Its primary function is to eliminate administrative inefficiencies and ensure strict data accuracy. Ultimately, the system is designed to equip educators and administrators with the real-time, evidence-based insights required to elevate instructional planning, direct targeted interventions, and improve overall student outcomes.
+                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- FOOTER BAR WITH DIRECT CLOSE BUTTON -->
-                        <div style="padding: 1.25rem 1.75rem; background-color: #f1f5f9; border-top: 1px solid #cbd5e1; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #334155;">
-                                <i class="ph-fill ph-shield-check" style="color: #16a34a; font-size: 1.1rem;"></i> Official School Portal Notice
+                        <!-- FOOTER BAR WITH HIGH-FIDELITY ACTION PILL BUTTON (IMAGE 1 STYLE) -->
+                        <div style="padding: 1.25rem 2.25rem; background: rgba(10, 10, 20, 0.92); border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; z-index: 10; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; font-weight: 700; color: #94a3b8;">
+                                <i class="ph-fill ph-shield-check" style="color: #10b981; font-size: 1.2rem;"></i> Official School Portal Notice
                             </div>
-                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" style="background-color: #1d4ed8; color: #ffffff; font-weight: 800; font-size: 0.875rem; padding: 0.85rem 1.75rem; border-radius: 0.85rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35); transition: all 0.2s ease;">
-                                <i class="ph-bold ph-check-circle" style="font-size: 1.1rem;"></i> Explore Portal & Continue
+                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" style="background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%); color: #ffffff; font-weight: 800; font-size: 0.9rem; padding: 0.85rem 2.25rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 0 25px rgba(99, 102, 241, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.transform='translateY(-2px) scale(1.02)';this.style.boxShadow='0 0 35px rgba(99, 102, 241, 0.75), 0 6px 16px rgba(0, 0, 0, 0.5)';" onmouseout="this.style.transform='translateY(0) scale(1)';this.style.boxShadow='0 0 25px rgba(99, 102, 241, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4)';">
+                                <span>Explore Portal & Continue</span>
+                                <i class="ph-bold ph-arrow-right" style="font-size: 1.1rem;"></i>
                             </button>
                         </div>
                     </div>
@@ -18557,7 +18596,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 let manageToolsHtml = '';
                 if (this.canManageUsers()) {
-                    const toolTitle = this.isDev() ? 'Developer God Mode' : 'Principal Management';
+                    const toolTitle = this.isDev() ? 'Developer Mode' : 'Principal Management';
                     const toolColor = this.isDev() ? 'green' : 'blue';
                     manageToolsHtml = `
                         <div class="bg-gray-900 text-white rounded-2xl shadow-xl overflow-hidden mb-8 border border-gray-800">
@@ -19445,17 +19484,19 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             // ==========================================
             renderFAQ() {
                 const faqs = [
+                    { q: 'What is NEXUS and what does it stand for?', a: 'NEXUS stands for New Educational eXcellence through Unified Systems. It is our school\'s secure, centralized cloud platform engineered to streamline monitoring, evaluation, learner profiles, academic performance, and school resources.' },
                     { q: 'How do I register an account?', a: 'You need a valid Registration Key from the Principal or System Developer. Go to the Sign In page, click "Register", fill in your details and paste the registration key.' },
                     { q: 'I forgot my password. How do I reset it?', a: 'On the login page, click "Forgot Password". You will need your registered name, email, and a valid Registration Key. A temporary password will be generated for you.' },
                     { q: 'Who can post announcements on the bulletin?', a: 'Department heads, group leaders, admins, the principal, and the system developer can create bulletin posts. Regular faculty members can read and interact with posts.' },
+                    { q: 'How do I filter, edit, or delete events on the school calendar?', a: 'Click any date on the calendar grid to filter events for that day. Authorized users (Developers, Principals, Assistant Principals, Department Heads) can add new events or use the explicit "Edit" and "Delete Event" buttons on event cards.' },
+                    { q: 'Does NEXUS work offline or with slow internet connection?', a: 'Yes! NEXUS utilizes SWR local caching (IndexedDB) and optimistic UI updates. You can view cached posts, profiles, and calendar events instantly offline, and new actions will sync to Google Cloud database once reconnected.' },
                     { q: 'How do I submit a report?', a: 'Go to the Reports & Analytics tab. Select a report category, then click "Submit Report". Upload your file (Excel/CSV) and it will be parsed and stored automatically.' },
-                    { q: 'What file formats are accepted for reports?', a: 'Excel files (.xlsx, .xls) and CSV files (.csv) are supported. The system will auto-detect and parse headers.' },
+                    { q: 'What file formats are accepted for reports and templates?', a: 'Excel files (.xlsx, .xls) and CSV files (.csv) are supported. You can also download official reporting templates under the User Guide > Downloads section.' },
                     { q: 'How do I join a department group?', a: 'Department groups are managed by group leaders. Ask your Department Head to add you to the group via the Group Management panel.' },
                     { q: 'Can I change my profile information?', a: 'Yes! Go to My Profile and update any of your personal, contact, or academic fields. Click "Save Profile" when done.' },
                     { q: 'Is my personal data (IDs, address) visible to others?', a: 'No. Fields marked with a lock icon (Private) are hidden from other users viewing your profile. Only you and administrators can see them.' },
                     { q: 'How do I use the Personnel Directory?', a: 'Click the "Directory" tab and type a name, position, department, or subject to search. Results show matching faculty with their public information.' },
                     { q: 'What is the DRRM Corner?', a: 'The DRRM (Disaster Risk Reduction Management) Corner is a dedicated module for tracking school incidents and safety reports. It is only visible to DRRM officers, the principal, and the developer.' },
-                    { q: 'How do I add a school event to the calendar?', a: 'If you are a Developer, Principal, Assistant Principal, or Department Head, click the edit button on the calendar widget in the Bulletin page. Enter the date, title, and description.' },
                     { q: 'How do I send feedback or report a bug?', a: 'Click the "Feedback" button in the sidebar (desktop) or at the bottom of your Profile page (mobile). Fill in the form and submit. The developer will receive your message.' }
                 ];
 
@@ -19882,8 +19923,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 </div>
                                 <div class="space-y-2">
                                     ${selectedEvents.map(evt => {
-                                        const canManageThisEvt = this.canManageEvents() && (this.isDev() || this.isPrincipal() || (this.user && String(evt.userId) === String(this.user.id)));
-                                        return `
+                            const canManageThisEvt = this.canManageEvents() && (this.isDev() || this.isPrincipal() || (this.user && String(evt.userId) === String(this.user.id)));
+                            return `
                                             <div class="p-2.5 bg-white rounded-lg border border-brand-100 shadow-sm flex flex-col gap-1.5">
                                                 <div class="flex items-start justify-between gap-2">
                                                     <div class="font-bold text-xs text-gray-900 leading-snug">📌 ${evt.title}</div>
@@ -19902,7 +19943,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                                 <div class="text-[9px] text-gray-400">By ${evt.userName || 'School Event'}</div>
                                             </div>
                                         `;
-                                    }).join('')}
+                        }).join('')}
                                 </div>
                             </div>
                         `;
@@ -20074,7 +20115,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             if (evtRes && Array.isArray(evtRes.events) && evtRes.events.length > 0) {
                                 this.events = evtRes.events;
                             }
-                        } catch(e) {}
+                        } catch (e) { }
 
                         // Persist to local IndexedDB cache
                         try {
@@ -20087,7 +20128,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 settings: this.settings,
                                 events: this.events
                             });
-                        } catch(e) {}
+                        } catch (e) { }
 
                         this.toast(editId ? 'Event updated!' : 'Event added to calendar!');
                         this.closeModal();
@@ -20123,7 +20164,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             settings: this.settings,
                             events: this.events
                         });
-                    } catch(e) {}
+                    } catch (e) { }
                     this.toast('Event deleted.');
                     const mainView = document.getElementById('main-view');
                     if (mainView) {
