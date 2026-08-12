@@ -1,7 +1,10 @@
 <!-- 
-    School Portal - v4.6.7
+    School Portal - v4.6.8
 
     CHANGELOG:
+    v4.6.8 (Aug 12, 2026 11:55 AM) - Page Logo Integration in NEXUS Landing Overlay [FEAT]:
+    - [FEAT] School Logo Branding on NEXUS Overlay: Replaced the static Phosphor icon in the landing page intro overlay header with the dynamic school page logo image resolved via `this.resolveImageUrl(this.settings?.logo)`, housed in a sleek glassmorphic container.
+
     v4.6.7 (Aug 12, 2026 11:35 AM) - Viewport-Optimized 100% Zoom Overlay Layout [FIX]:
     - [FIX] 100% Zoom Vertical Fit & Typography Scaling: Refined vertical paddings, icon bounds, and heading clamp sizing in `showNexusIntroOverlay` so all NEXUS landing elements fit seamlessly inside standard viewports at 100% browser zoom without scrollbars or clipped badges, matching the 80% zoomed-out aesthetic.
 
@@ -15,9 +18,6 @@
 
     v4.6.4 (Aug 12, 2026 11:15 AM) - Automatic Registration Key Auto-Seeding & Fail-Safe Handler [FIX]:
     - [FIX] Registration Key Retrieval & Generation Fail-Safe: Resolved key retrieval failures by adding automatic missing sheet initialization in Apps Script handlers (`getRegistrationKeysHandler`, `generateRegistrationKeyHandler`, `revokeRegistrationKeyHandler`) and implementing automatic initial active key seeding when no registration keys exist, ensuring active registration keys are always available for faculty onboarding.
-
-    v4.6.3 (Aug 12, 2026 11:00 AM) - Robust HTML Response Handling & Web App Deployment Diagnostic [FIX]:
-    - [FIX] HTML Response & Unexpected Token Trap: Enhanced API response parsing in `this.api` to intercept HTML responses (e.g., Google auth redirects or deployment errors starting with '<') and display clear, diagnostic troubleshooting instructions instead of raw JavaScript JSON parse errors (`Unexpected token '<'`).
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -13564,8 +13564,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     <!-- SLEEK NAV HEADER (FULL-WIDTH COMPACT) -->
                     <div style="padding: 1.15rem 2.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); z-index: 10; position: relative; background: rgba(8, 8, 18, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-shrink: 0;">
                         <div style="display: flex; align-items: center; gap: 0.85rem;">
-                            <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 1.35rem; box-shadow: 0 0 18px rgba(168, 85, 247, 0.6);">
-                                <i class="ph-fill ph-circles-three-plus"></i>
+                            <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 0 18px rgba(168, 85, 247, 0.5); flex-shrink: 0;">
+                                <img src="${this.resolveImageUrl(this.settings?.logo || 'https://drive.google.com/uc?id=1KC0jOetPztUJfE7I6my9qHmCZrbBuOLy&export=download')}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/d/1KC0jOetPztUJfE7I6my9qHmCZrbBuOLy';">
                             </div>
                             <div>
                                 <div style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #a855f7;">KCNHS PORTAL</div>
