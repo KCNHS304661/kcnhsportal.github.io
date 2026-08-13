@@ -1,7 +1,13 @@
 <!-- 
-    School Portal - v4.7.1
+    School Portal - v4.7.3
 
     CHANGELOG:
+    v4.7.3 (Aug 13, 2026 11:26 AM) - Admin Designation Option [FEAT]:
+    - [FEAT] Admin Designation Support: Added "Admin" option to the Designation dropdown in My Profile, allowing administrators and system leads to set Admin as their official designation.
+
+    v4.7.2 (Aug 13, 2026 11:15 AM) - Password Peek Icon In-Bar Alignment [FIX]:
+    - [FIX] Password Peek Icon Positioning: Fixed absolute right alignment and vertical centering of password eye toggle buttons inside input bars by defining explicit `.password-toggle-btn` styling with `top: 50%; transform: translateY(-50%); right: 0.75rem`.
+
     v4.7.1 (Aug 13, 2026 10:54 AM) - LocalDB Storage Adapter Fix [FIX]:
     - [FIX] LocalDB Storage Method Signature: Fixed LocalDB method invocation in Registration Key Manager to use `LocalDB.set('cache', 'registrationKeys', keys)` and added a fail-safe `LocalDB.put` alias to prevent `LocalDB.put is not a function` runtime exceptions.
 
@@ -11,12 +17,6 @@
 
     v4.6.9 (Aug 13, 2026 10:45 AM) - Password Visibility Toggle (Peek Feature) [FEAT]:
     - [FEAT] Password Peek Toggle in Auth & Settings: Added interactive eye/eye-slash peek buttons to Password and Confirm Password fields in Login, Registration, Group Creation, and Profile Security sections, allowing users to toggle password visibility and verify input accuracy.
-
-    v4.6.8 (Aug 12, 2026 11:55 AM) - Page Logo Integration in NEXUS Landing Overlay [FEAT]:
-    - [FEAT] School Logo Branding on NEXUS Overlay: Replaced the static Phosphor icon in the landing page intro overlay header with the dynamic school page logo image resolved via `this.resolveImageUrl(this.settings?.logo)`, housed in a sleek glassmorphic container.
-
-    v4.6.7 (Aug 12, 2026 11:35 AM) - Viewport-Optimized 100% Zoom Overlay Layout [FIX]:
-    - [FIX] 100% Zoom Vertical Fit & Typography Scaling: Refined vertical paddings, icon bounds, and heading clamp sizing in `showNexusIntroOverlay` so all NEXUS landing elements fit seamlessly inside standard viewports at 100% browser zoom without scrollbars or clipped badges, matching the 80% zoomed-out aesthetic.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -29,7 +29,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.7.1</title>
+    <title>School Portal v4.7.3</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -11782,6 +11782,26 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             box-shadow: 0 0 0 2px #dbeafe;
         }
 
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+        .password-toggle-btn:hover {
+            color: #4b5563;
+        }
+
         /* Custom Dropdown Styling (Chevron) */
         select.input-field {
             -webkit-appearance: none;
@@ -13991,16 +14011,16 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 
                                 <input type="email" name="email" value="${defaultEmail || ''}" placeholder="Email Address" class="input-field" required>
                                 
-                                <div class="relative">
+                                <div class="relative w-full">
                                     <input type="password" id="auth-password" name="password" placeholder="Password" class="input-field pr-10" required>
-                                    <button type="button" onclick="App.togglePasswordVisibility('auth-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1 transition-colors" title="Toggle password visibility">
+                                    <button type="button" onclick="App.togglePasswordVisibility('auth-password', this)" class="password-toggle-btn" title="Toggle password visibility">
                                         <i class="ph-bold ph-eye text-lg"></i>
                                     </button>
                                 </div>
                                 ${!isLogin ? `
-                                <div class="relative">
+                                <div class="relative w-full">
                                     <input type="password" id="auth-confirm-password" name="confirmPassword" placeholder="Confirm Password" class="input-field pr-10" required>
-                                    <button type="button" onclick="App.togglePasswordVisibility('auth-confirm-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1 transition-colors" title="Toggle password visibility">
+                                    <button type="button" onclick="App.togglePasswordVisibility('auth-confirm-password', this)" class="password-toggle-btn" title="Toggle password visibility">
                                         <i class="ph-bold ph-eye text-lg"></i>
                                     </button>
                                 </div>
@@ -14493,9 +14513,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             <div class="space-y-2 w-full">
                                 <p class="text-sm font-medium text-yellow-800">Verification Required</p>
                                 <p class="text-xs text-yellow-700">Please re-enter your password to verify your identity.</p>
-                                <div class="relative">
+                                <div class="relative w-full">
                                     <input type="password" id="group-password-confirm" name="passwordConfirm" placeholder="Current Password" class="input-field bg-white pr-10" required>
-                                    <button type="button" onclick="App.togglePasswordVisibility('group-password-confirm', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1 transition-colors" title="Toggle password visibility">
+                                    <button type="button" onclick="App.togglePasswordVisibility('group-password-confirm', this)" class="password-toggle-btn" title="Toggle password visibility">
                                         <i class="ph-bold ph-eye text-lg"></i>
                                     </button>
                                 </div>
@@ -19024,11 +19044,12 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         <!-- Designation -->
                                         <div class="space-y-2">
                                             <label class="text-xs font-bold text-gray-600 block">Designation</label>
-                                            <select name="designation" class="input-field text-sm py-2.5" onchange="document.getElementById('adv-sec-group').style.display = this.value === 'Class Adviser' ? 'block' : 'none'; document.getElementById('office-task-group').style.display = this.value === 'Staff' ? 'block' : 'none'">
+                                            <select name="designation" class="input-field text-sm py-2.5" onchange="document.getElementById('adv-sec-group').style.display = this.value === 'Class Adviser' ? 'block' : 'none'; document.getElementById('office-task-group').style.display = (this.value === 'Staff' || this.value === 'Admin') ? 'block' : 'none'">
                                                 <option value="" disabled ${!u.designation ? 'selected' : ''}>-- Select Designation --</option>
                                                 <option value="Floating Teacher" ${u.designation === 'Floating Teacher' ? 'selected' : ''}>Floating Teacher</option>
                                                 <option value="Class Adviser" ${u.designation === 'Class Adviser' ? 'selected' : ''}>Class Adviser</option>
                                                 <option value="Staff" ${u.designation === 'Staff' ? 'selected' : ''}>Staff</option>
+                                                <option value="Admin" ${u.designation === 'Admin' ? 'selected' : ''}>Admin</option>
                                             </select>
                                         </div>
                                         <div id="adv-sec-group" class="space-y-3 p-4 bg-gray-50/70 border border-gray-200 rounded-2xl" style="display: ${u.designation === 'Class Adviser' ? 'block' : 'none'}">
@@ -19057,7 +19078,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                                 </div>
                                             </div>
                                         </div>
-                                        <div id="office-task-group" class="space-y-2" style="display: ${u.designation === 'Staff' ? 'block' : 'none'}">
+                                        <div id="office-task-group" class="space-y-2" style="display: ${(u.designation === 'Staff' || u.designation === 'Admin') ? 'block' : 'none'}">
                                             <label class="text-xs font-bold text-gray-600 block">Office & Task</label>
                                             <input type="text" name="officeAndTask" value="${u.officeAndTask || ''}" placeholder="e.g. Registrar - Data Encoder" class="input-field text-sm py-2.5">
                                         </div>
@@ -19129,18 +19150,18 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         <div class="space-y-4">
                                             <div class="space-y-2">
                                                 <label class="text-xs font-bold text-gray-600 block">New Password</label>
-                                                <div class="relative">
+                                                <div class="relative w-full">
                                                     <input type="password" id="newPasswordInput" name="newPassword" placeholder="Enter new password" class="input-field text-sm py-2.5 pr-10">
-                                                    <button type="button" onclick="App.togglePasswordVisibility('newPasswordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1 transition-colors" title="Toggle password visibility">
+                                                    <button type="button" onclick="App.togglePasswordVisibility('newPasswordInput', this)" class="password-toggle-btn" title="Toggle password visibility">
                                                         <i class="ph-bold ph-eye text-lg"></i>
                                                     </button>
                                                 </div>
                                             </div>
                                             <div class="space-y-2">
                                                 <label class="text-xs font-bold text-gray-600 block">Confirm Password</label>
-                                                <div class="relative">
+                                                <div class="relative w-full">
                                                     <input type="password" id="confirmPasswordInput" name="confirmPassword" placeholder="Confirm new password" class="input-field text-sm py-2.5 pr-10">
-                                                    <button type="button" onclick="App.togglePasswordVisibility('confirmPasswordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none p-1 transition-colors" title="Toggle password visibility">
+                                                    <button type="button" onclick="App.togglePasswordVisibility('confirmPasswordInput', this)" class="password-toggle-btn" title="Toggle password visibility">
                                                         <i class="ph-bold ph-eye text-lg"></i>
                                                     </button>
                                                 </div>
