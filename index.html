@@ -1,7 +1,10 @@
 <!-- 
-    School Portal - v4.7.3
+    School Portal - v4.7.4
 
     CHANGELOG:
+    v4.7.4 (Sep 10, 2026 08:35 AM) - Mobile Landing & NEXUS Intro Overlay Responsiveness [FIX]:
+    - [FIX] Mobile Layout & Content Visibility: Fixed mobile layout cramping and overlapping in NEXUS Intro Overlay and Landing Page by replacing hardcoded margins/paddings with dynamic viewport units (100dvh), switching flex alignment from `justify-content: center` to safe top alignment to prevent heading content clipping, making header badges adaptively compact on mobile, and ensuring full-width thumb-friendly footer buttons with safe bottom scroll clearance.
+
     v4.7.3 (Aug 13, 2026 11:26 AM) - Admin Designation Option [FEAT]:
     - [FEAT] Admin Designation Support: Added "Admin" option to the Designation dropdown in My Profile, allowing administrators and system leads to set Admin as their official designation.
 
@@ -15,9 +18,6 @@
     - [FIX] Instant Key Manager SWR Load: Removed screen-blocking global loader overlay from `openKeyManager`, enabling instant zero-latency modal rendering using local IndexedDB/localStorage cache with silent background revalidation for slow connections.
     - [FEAT] Dedicated Overlay Refresh Button: Integrated a prominent interactive "Refresh" button in the Registration Key Management header with live spinning feedback and automatic cache updates.
 
-    v4.6.9 (Aug 13, 2026 10:45 AM) - Password Visibility Toggle (Peek Feature) [FEAT]:
-    - [FEAT] Password Peek Toggle in Auth & Settings: Added interactive eye/eye-slash peek buttons to Password and Confirm Password fields in Login, Registration, Group Creation, and Profile Security sections, allowing users to toggle password visibility and verify input accuracy.
-
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
     2. Paste the Web App URL into the `const API_URL` variable inside the script tag below.
@@ -29,7 +29,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.7.3</title>
+    <title>School Portal v4.7.4</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -11798,6 +11798,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             transition: color 0.2s;
             z-index: 10;
         }
+
         .password-toggle-btn:hover {
             color: #4b5563;
         }
@@ -11997,6 +11998,424 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 top: 1rem !important;
                 order: 2 !important;
             }
+        }
+
+        /* ==============================================
+         * NEXUS INTRO OVERLAY RESPONSIVE STYLES - v4.7.4
+         * ============================================== */
+        #nexus-intro-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            width: 100vw;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: #04040a;
+            overflow: hidden;
+            font-family: "Outfit", "Inter", system-ui, -apple-system, sans-serif;
+            animation: fadeIn 0.4s ease-out;
+            box-sizing: border-box;
+        }
+
+        .nexus-intro-header {
+            padding: 0.75rem 1rem;
+            padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 20;
+            position: relative;
+            background: rgba(8, 8, 18, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-header {
+                padding: 1.15rem 2.5rem;
+                padding-top: max(1.15rem, env(safe-area-inset-top, 1.15rem));
+                gap: 1.25rem;
+            }
+        }
+
+        .nexus-intro-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
+        .nexus-intro-brand-logo {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.4);
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-brand-logo {
+                width: 2.5rem;
+                height: 2.5rem;
+                border-radius: 0.85rem;
+                box-shadow: 0 0 18px rgba(168, 85, 247, 0.5);
+            }
+        }
+
+        .nexus-intro-brand-sub {
+            font-size: 0.58rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #a855f7;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-brand-sub {
+                font-size: 0.65rem;
+                letter-spacing: 0.18em;
+            }
+        }
+
+        .nexus-intro-brand-title {
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            line-height: 1.1;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-brand-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        .nexus-intro-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-header-actions {
+                gap: 1.25rem;
+            }
+        }
+
+        .nexus-intro-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.35rem 0.65rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-badge {
+                font-size: 0.75rem;
+                padding: 0.4rem 1.15rem;
+                gap: 0.5rem;
+            }
+        }
+
+        .nexus-intro-badge-short {
+            display: inline;
+        }
+
+        .nexus-intro-badge-full {
+            display: none;
+        }
+
+        @media (min-width: 520px) {
+            .nexus-intro-badge-short {
+                display: none;
+            }
+
+            .nexus-intro-badge-full {
+                display: inline;
+            }
+        }
+
+        .nexus-intro-close-btn {
+            width: 2.25rem;
+            height: 2.25rem;
+            min-width: 2.25rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .nexus-intro-close-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.06);
+        }
+
+        .nexus-intro-content {
+            flex: 1;
+            max-width: 68rem;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.25rem 1rem 3.5rem 1rem;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 1.15rem;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-content {
+                padding: 1.5rem 2rem 3.5rem 2rem;
+                gap: 1.25rem;
+            }
+        }
+
+        @media (min-width: 768px) and (min-height: 720px) {
+            .nexus-intro-content {
+                justify-content: center;
+            }
+        }
+
+        .nexus-intro-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+            max-width: 100%;
+            line-height: 1.4;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-tag {
+                font-size: 0.7rem;
+                letter-spacing: 0.15em;
+                padding: 0.35rem 1rem;
+                margin-bottom: 0.65rem;
+            }
+        }
+
+        .nexus-intro-heading {
+            font-size: clamp(1.85rem, 5vw, 3.25rem);
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+            line-height: 1.15;
+            margin: 0;
+        }
+
+        .nexus-intro-slogan-card {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(217, 119, 6, 0.08) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            border-radius: 1.15rem;
+            padding: 0.9rem 1.15rem;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-slogan-card {
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                gap: 1.15rem;
+            }
+        }
+
+        .nexus-intro-slogan-icon {
+            width: 2.35rem;
+            height: 2.35rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            font-weight: 900;
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.55);
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-slogan-icon {
+                width: 2.75rem;
+                height: 2.75rem;
+                border-radius: 0.85rem;
+                font-size: 1.45rem;
+                box-shadow: 0 0 18px rgba(245, 158, 11, 0.55);
+            }
+        }
+
+        .nexus-intro-slogan-text {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fef08a;
+            margin: 0;
+            line-height: 1.35;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-slogan-text {
+                font-size: 1.05rem;
+            }
+        }
+
+        .nexus-intro-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .nexus-intro-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.25rem;
+            }
+        }
+
+        .nexus-intro-card {
+            background: rgba(12, 12, 26, 0.75);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 1.15rem;
+            padding: 1.15rem 1.25rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(99, 102, 241, 0.08);
+            transition: transform 0.3s ease;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-card {
+                border-radius: 1.25rem;
+                padding: 1.35rem 1.5rem;
+            }
+        }
+
+        .nexus-intro-card p {
+            margin: 0;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-card p {
+                font-size: 0.95rem;
+                line-height: 1.65;
+            }
+        }
+
+        .nexus-intro-footer {
+            padding: 0.85rem 1rem;
+            padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0.85rem));
+            background: rgba(6, 6, 15, 0.92);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            position: relative;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-footer {
+                padding: 1.15rem 2.5rem;
+                padding-bottom: max(1.15rem, env(safe-area-inset-bottom, 1.15rem));
+                justify-content: flex-end;
+            }
+        }
+
+        .nexus-intro-action-btn {
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.95rem;
+            padding: 0.85rem 2rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5), 0 6px 20px rgba(0, 0, 0, 0.45);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            max-width: 380px;
+        }
+
+        @media (min-width: 640px) {
+            .nexus-intro-action-btn {
+                width: auto;
+                max-width: none;
+                padding: 0.85rem 2.5rem;
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), 0 6px 20px rgba(0, 0, 0, 0.45);
+            }
+        }
+
+        .nexus-intro-action-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 0 45px rgba(99, 102, 241, 0.8), 0 8px 25px rgba(0, 0, 0, 0.55);
+        }
+
+        .nexus-intro-action-btn:active {
+            transform: translateY(0) scale(0.98);
         }
     </style>
 
@@ -13583,82 +14002,83 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 const modal = document.createElement('div');
                 modal.id = 'nexus-intro-modal-overlay';
-                modal.style.cssText = 'position: fixed; inset: 0; z-index: 9999; width: 100vw; height: 100vh; display: flex; flex-direction: column; background: #04040a; overflow: hidden; font-family: "Outfit", "Inter", system-ui, -apple-system, sans-serif; animation: fadeIn 0.4s ease-out;';
 
                 modal.innerHTML = `
                     <!-- FULL-SCREEN FLUID ANTIGRAVITY INTERACTIVE CANVAS BACKGROUND -->
                     <canvas id="nexus-antigravity-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; opacity: 0.95;"></canvas>
 
-                    <!-- SLEEK NAV HEADER (FULL-WIDTH COMPACT) -->
-                    <div style="padding: 1.15rem 2.5rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.08); z-index: 10; position: relative; background: rgba(8, 8, 18, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-shrink: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.85rem;">
-                            <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 0 18px rgba(168, 85, 247, 0.5); flex-shrink: 0;">
+                    <!-- SLEEK NAV HEADER (RESPONSIVE COMPACT) -->
+                    <div class="nexus-intro-header">
+                        <div class="nexus-intro-brand">
+                            <div class="nexus-intro-brand-logo">
                                 <img src="${this.resolveImageUrl(this.settings?.logo || 'https://drive.google.com/uc?id=1KC0jOetPztUJfE7I6my9qHmCZrbBuOLy&export=download')}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='https://lh3.googleusercontent.com/d/1KC0jOetPztUJfE7I6my9qHmCZrbBuOLy';">
                             </div>
                             <div>
-                                <div style="font-size: 0.65rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #a855f7;">KCNHS PORTAL</div>
-                                <div style="font-size: 1.25rem; font-weight: 900; letter-spacing: -0.02em; color: #ffffff;">NEXUS</div>
+                                <div class="nexus-intro-brand-sub">KCNHS PORTAL</div>
+                                <div class="nexus-intro-brand-title">NEXUS</div>
                             </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: 1.25rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; font-weight: 700; color: #94a3b8; background: rgba(255, 255, 255, 0.05); padding: 0.4rem 1.15rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                                <i class="ph-fill ph-shield-check" style="color: #10b981; font-size: 1.1rem;"></i> Official School Portal Notice
+                        <div class="nexus-intro-header-actions">
+                            <div class="nexus-intro-badge">
+                                <i class="ph-fill ph-shield-check" style="color: #10b981; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <span class="nexus-intro-badge-short">Official Notice</span>
+                                <span class="nexus-intro-badge-full">Official School Portal Notice</span>
                             </div>
                             <!-- CLOSE BUTTON -->
-                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" title="Close Overlay" style="width: 2.25rem; height: 2.25rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.color='#ffffff';this.style.background='rgba(255,255,255,0.2)';this.style.transform='scale(1.06)';" onmouseout="this.style.color='#94a3b8';this.style.background='rgba(255,255,255,0.08)';this.style.transform='scale(1)';">
+                            <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" title="Close Overlay" class="nexus-intro-close-btn">
                                 <i class="ph ph-x" style="font-size: 1.1rem;"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- MAIN HERO CONTENT SECTION (RESPONSIVE VIEWPORT-FITTING FLEX CONTAINER) -->
-                    <div style="flex: 1; max-width: 68rem; width: 100%; margin: 0 auto; padding: 1.5rem 2rem; position: relative; z-index: 10; display: flex; flex-direction: column; justify-content: center; gap: 1.25rem; min-height: 0; overflow-y: auto;">
+                    <!-- MAIN HERO CONTENT SECTION (RESPONSIVE VIEWPORT-FITTING SCROLL CONTAINER) -->
+                    <div class="nexus-intro-content">
                         
                         <!-- HERO HEADING & TAGLINE -->
                         <div>
-                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.35rem 1rem; border-radius: 9999px; margin-bottom: 0.65rem; box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);">
-                                <span style="width: 7px; height: 7px; border-radius: 9999px; background: #38bdf8; box-shadow: 0 0 8px #38bdf8;" class="animate-ping"></span> Centralized School Monitoring, Evaluation & Data Platform
+                            <div class="nexus-intro-tag">
+                                <span style="width: 7px; height: 7px; border-radius: 9999px; background: #38bdf8; box-shadow: 0 0 8px #38bdf8; flex-shrink: 0;" class="animate-ping"></span> Centralized School Monitoring, Evaluation & Data Platform
                             </div>
-                            <h1 style="font-size: clamp(2rem, 4.2vh, 3.25rem); font-weight: 900; letter-spacing: -0.03em; color: #ffffff; line-height: 1.1; margin: 0;">
+                            <h1 class="nexus-intro-heading">
                                 Welcome to <span style="background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NEXUS.</span>
                             </h1>
                         </div>
 
                         <!-- SLOGAN BANNER CARD -->
-                        <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(217, 119, 6, 0.08) 100%); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 1.25rem; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.15rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px);">
-                            <div style="width: 2.75rem; height: 2.75rem; border-radius: 0.85rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: #000000; font-size: 1.45rem; flex-shrink: 0; font-weight: 900; box-shadow: 0 0 18px rgba(245, 158, 11, 0.55);">
+                        <div class="nexus-intro-slogan-card">
+                            <div class="nexus-intro-slogan-icon">
                                 <i class="ph-fill ph-lightbulb"></i>
                             </div>
                             <div>
-                                <p style="font-size: 1.05rem; font-weight: 800; color: #fef08a; margin: 0; line-height: 1.35;">
+                                <p class="nexus-intro-slogan-text">
                                     NEXUS: New Educational eXcellence through Unified Systems.
                                 </p>
                             </div>
                         </div>
 
                         <!-- HIGH CONTRAST INFORMATIONAL PANELS -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                        <div class="nexus-intro-grid">
                             
                             <!-- PARAGRAPH 1 CARD -->
-                            <div style="background: rgba(12, 12, 26, 0.75); border: 1px solid rgba(139, 92, 246, 0.25); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 1.25rem; padding: 1.35rem 1.5rem; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(99, 102, 241, 0.08); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <p style="margin: 0; color: #e2e8f0; font-weight: 400; font-size: 0.95rem; line-height: 1.65;">
+                            <div class="nexus-intro-card" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <p style="color: #e2e8f0; font-weight: 400;">
                                     <strong style="color: #38bdf8; font-weight: 800;">NEXUS</strong> is a secure, centralized digital platform engineered to streamline our school's monitoring, evaluation, and data management operations. By transitioning from manual record-keeping to an integrated cloud-based system, the portal consolidates learner profiles, academic performance, attendance records, and school resource inventories into a single, highly accessible interface.
                                 </p>
                             </div>
 
                             <!-- PARAGRAPH 2 CARD -->
-                            <div style="background: rgba(12, 12, 26, 0.75); border: 1px solid rgba(139, 92, 246, 0.25); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 1.25rem; padding: 1.35rem 1.5rem; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(99, 102, 241, 0.08); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                <p style="margin: 0; color: #cbd5e1; font-weight: 400; font-size: 0.95rem; line-height: 1.65;">
+                            <div class="nexus-intro-card" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <p style="color: #cbd5e1; font-weight: 400;">
                                     Its primary function is to eliminate administrative inefficiencies and ensure strict data accuracy. Ultimately, the system is designed to equip educators and administrators with the real-time, evidence-based insights required to elevate instructional planning, direct targeted interventions, and improve overall student outcomes.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- FOOTER BAR WITH HIGH-FIDELITY ACTION BUTTON (FULL WIDTH COMPACT) -->
-                    <div style="padding: 1.15rem 2.5rem; background: rgba(8, 8, 18, 0.85); border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: flex-end; align-items: center; z-index: 10; position: relative; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); flex-shrink: 0;">
-                        <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" style="background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%); color: #ffffff; font-weight: 800; font-size: 0.95rem; padding: 0.85rem 2.5rem; border-radius: 9999px; border: 1px solid rgba(255, 255, 255, 0.25); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.65rem; box-shadow: 0 0 30px rgba(99, 102, 241, 0.6), 0 6px 20px rgba(0, 0, 0, 0.45); transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);" onmouseover="this.style.transform='translateY(-2px) scale(1.02)';this.style.boxShadow='0 0 45px rgba(99, 102, 241, 0.8), 0 8px 25px rgba(0, 0, 0, 0.55)';" onmouseout="this.style.transform='translateY(0) scale(1)';this.style.boxShadow='0 0 30px rgba(99, 102, 241, 0.6), 0 6px 20px rgba(0, 0, 0, 0.45)';">
+                    <!-- FOOTER BAR WITH HIGH-FIDELITY ACTION BUTTON (RESPONSIVE FULL-WIDTH / COMPACT) -->
+                    <div class="nexus-intro-footer">
+                        <button onclick="App.closeNexusIntroOverlay('${todayDateStr}')" class="nexus-intro-action-btn">
                             <span>Explore Portal & Continue</span>
                             <i class="ph-bold ph-arrow-right" style="font-size: 1.15rem;"></i>
                         </button>
@@ -13686,7 +14106,16 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                     mouse.active = true;
                 };
 
+                const handleTouchMove = (e) => {
+                    if (e.touches && e.touches[0]) {
+                        mouse.x = e.touches[0].clientX;
+                        mouse.y = e.touches[0].clientY;
+                        mouse.active = true;
+                    }
+                };
+
                 window.addEventListener('mousemove', handleMouseMove);
+                window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
                 const handleResize = () => {
                     width = canvas.width = window.innerWidth;
@@ -13720,6 +14149,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 const animate = () => {
                     if (!document.getElementById('nexus-antigravity-canvas')) {
                         window.removeEventListener('mousemove', handleMouseMove);
+                        window.removeEventListener('touchmove', handleTouchMove);
                         window.removeEventListener('resize', handleResize);
                         return;
                     }
@@ -13817,37 +14247,37 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             _renderGuestHTML(container) {
                 if (!container) return;
                 container.innerHTML = `
-                    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 animate-fade-in">
+                    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 animate-fade-in">
                         <!-- GUEST HEADER BAR -->
-                        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 sm:p-6 mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                                <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-brand-600 flex items-center justify-center text-white shadow-lg overflow-hidden shrink-0">
                                     ${this.settings.logo ? `<img src="${this.resolveImageUrl(this.settings.logo)}" class="w-full h-full object-cover">` : `<i class="ph-fill ph-student text-2xl"></i>`}
                                 </div>
-                                <div>
-                                    <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">${this.settings.appName}</h1>
-                                    <p class="text-xs text-gray-500 font-medium">Public School Bulletin & Announcements</p>
+                                <div class="min-w-0 flex-1">
+                                    <h1 class="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight truncate">${this.settings.appName}</h1>
+                                    <p class="text-xs text-gray-500 font-medium truncate">Public School Bulletin & Announcements</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <button onclick="App.router('login')" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-2">
+                            <div class="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+                                <button onclick="App.router('login')" class="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
                                     <i class="ph-bold ph-sign-in"></i> Sign In
                                 </button>
-                                <button onclick="App.router('register')" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm rounded-xl transition-all active:scale-95">
+                                <button onclick="App.router('register')" class="flex-1 sm:flex-initial px-4 sm:px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-sm rounded-xl transition-all active:scale-95 flex items-center justify-center">
                                     Register
                                 </button>
                             </div>
                         </div>
 
                         <!-- PUBLIC BULLETIN HERO -->
-                        <div class="mb-6 flex justify-between items-center">
+                        <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5">
                             <div>
                                 <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                                     <i class="ph-fill ph-megaphone text-brand-600 text-2xl"></i> School Bulletin
                                 </h2>
                                 <p class="text-xs text-gray-500 mt-0.5">Read-only view for visitors, students, and guests</p>
                             </div>
-                            <span class="text-xs bg-brand-50 text-brand-700 font-bold px-3 py-1.5 rounded-full border border-brand-100 flex items-center gap-1.5">
+                            <span class="text-xs bg-brand-50 text-brand-700 font-bold px-3 py-1.5 rounded-full border border-brand-100 flex items-center gap-1.5 self-start sm:self-auto">
                                 <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> Live Posts
                             </span>
                         </div>
@@ -13999,7 +14429,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                     </select>
                                     <input type="text" name="customRole" id="auth-custom-role" placeholder="Enter Custom Position" class="input-field hidden">
                                 </div>
-                                <input type="text" name="empId" placeholder="Employee Number (Optional)" class="input-field">
+                                <input type="text" name="empId" placeholder="Employee Number" class="input-field">
                                 <div class="space-y-1">
                                     <div class="flex justify-between items-center">
                                         <label class="text-xs font-bold text-gray-700">Registration Key <span class="text-red-500">*</span></label>
