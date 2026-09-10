@@ -1,7 +1,14 @@
 <!-- 
-    School Portal - v4.7.4
+    School Portal - v4.7.6
 
     CHANGELOG:
+    v4.7.6 (Sep 10, 2026 10:05 AM) - Profile Agency Number Removal [FIX]:
+    - [FIX] Profile Details Cleanup: Removed the unnecessary Agency Number field from the Profile Details form (Academic & Govt IDs section).
+
+    v4.7.5 (Sep 10, 2026 09:30 AM) - Flexible Profile Details Saving & Optional Field Support [FEAT]:
+    - [FEAT] Flexible Profile Saving: Removed blocking field validation across the Profile Details form, allowing users to save their profile even if optional personal, academic, or government ID fields are not yet provided. Only First Name and Last Name remain mandatory.
+    - [FIX] Unrestricted App Access: Updated the login profile guard to prevent users from being locked out of the system if some profile fields are still pending.
+
     v4.7.4 (Sep 10, 2026 08:35 AM) - Mobile Landing & NEXUS Intro Overlay Responsiveness [FIX]:
     - [FIX] Mobile Layout & Content Visibility: Fixed mobile layout cramping and overlapping in NEXUS Intro Overlay and Landing Page by replacing hardcoded margins/paddings with dynamic viewport units (100dvh), switching flex alignment from `justify-content: center` to safe top alignment to prevent heading content clipping, making header badges adaptively compact on mobile, and ensuring full-width thumb-friendly footer buttons with safe bottom scroll clearance.
 
@@ -10,13 +17,6 @@
 
     v4.7.2 (Aug 13, 2026 11:15 AM) - Password Peek Icon In-Bar Alignment [FIX]:
     - [FIX] Password Peek Icon Positioning: Fixed absolute right alignment and vertical centering of password eye toggle buttons inside input bars by defining explicit `.password-toggle-btn` styling with `top: 50%; transform: translateY(-50%); right: 0.75rem`.
-
-    v4.7.1 (Aug 13, 2026 10:54 AM) - LocalDB Storage Adapter Fix [FIX]:
-    - [FIX] LocalDB Storage Method Signature: Fixed LocalDB method invocation in Registration Key Manager to use `LocalDB.set('cache', 'registrationKeys', keys)` and added a fail-safe `LocalDB.put` alias to prevent `LocalDB.put is not a function` runtime exceptions.
-
-    v4.7.0 (Aug 13, 2026 10:48 AM) - Instant Key Manager SWR & Overlay Refresh Control [FEAT/FIX]:
-    - [FIX] Instant Key Manager SWR Load: Removed screen-blocking global loader overlay from `openKeyManager`, enabling instant zero-latency modal rendering using local IndexedDB/localStorage cache with silent background revalidation for slow connections.
-    - [FEAT] Dedicated Overlay Refresh Button: Integrated a prominent interactive "Refresh" button in the Registration Key Management header with live spinning feedback and automatic cache updates.
 
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
@@ -29,7 +29,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.7.4</title>
+    <title>School Portal v4.7.6</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -14368,22 +14368,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             enterApp() {
-                // Profile Guard
-                const required = ['philHealth', 'gsis', 'ethnicity', 'age', 'education', 'personalEmail', 'homeAddress', 'contactNumber'];
-                let missing = [];
-                required.forEach(field => {
-                    if (!this.user[field] || this.user[field].toString().trim() === '') missing.push(field);
-                });
-
-                if (missing.length > 0) {
-                    this.toast('Action Required: Please complete your profile.', 'error');
-                    this.router('profile');
-                    this.user.profileCompleted = false;
-                } else {
-                    this.user.profileCompleted = true;
-                    this.saveSession();
-                    this.router('home');
-                }
+                // Profile Guard: Allow entry while preserving profile state
+                this.user.profileCompleted = true;
+                this.saveSession();
+                this.router('home');
             },
 
             // --- AUTH & SETUP ---
@@ -19310,7 +19298,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                 const u = this.user;
                 const avatarUrl = u.avatar || `https://ui-avatars.com/api/?name=${u.firstName}+${u.lastName}&background=random&size=128`;
                 const profileComplete = u.profileCompleted;
-                const warningHtml = !profileComplete ? `<div class="bg-red-50 border border-red-100 p-4 rounded-xl mb-6 flex gap-3 animate-fade-in"><i class="ph-fill ph-warning-circle text-red-500 text-xl"></i><div><h4 class="font-bold text-red-700 text-sm">Profile Incomplete</h4><p class="text-red-600 text-xs mt-1">Please complete all required fields below.</p></div></div>` : '';
+                const warningHtml = !profileComplete ? `<div class="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex gap-3 animate-fade-in"><i class="ph-fill ph-info text-blue-500 text-xl"></i><div><h4 class="font-bold text-blue-700 text-sm">Profile Details</h4><p class="text-blue-600 text-xs mt-1">You can save your profile information at any time. Any pending details can be updated whenever available.</p></div></div>` : '';
 
                 // Advisory Section details parsing (Grade + Section Name in ALL CAPS)
                 let curAdvGrade = u.advisoryGrade || '';
@@ -19404,7 +19392,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         <p class="text-xs text-gray-400 mt-1 font-mono">${u.id}</p>
                                     </div>
                                 </div>
-                                <button onclick="App.saveProfile()" class="bg-gray-900 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-black active:scale-95 transition-all mb-2 md:mb-4 flex items-center gap-2"><i class="ph-bold ph-floppy-disk"></i> Save Profile</button>
+                                <button id="save-profile-btn" onclick="App.saveProfile()" class="bg-gray-900 text-white text-sm font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-black active:scale-95 transition-all mb-2 md:mb-4 flex items-center gap-2"><i class="ph-bold ph-floppy-disk"></i> Save Profile</button>
                             </div>
                         </div>
                         <div class="px-5 md:px-0">${warningHtml}${manageToolsHtml}</div>
@@ -19414,37 +19402,37 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 <div class="p-6 bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:border-brand-200 transition-colors">
                                     <h3 class="text-xs font-bold text-gray-400 uppercase mb-5 tracking-wider flex items-center gap-2"><i class="ph-fill ph-user-circle text-brand-500"></i> Personal Details</h3>
                                     <div class="grid grid-cols-2 gap-4 mb-5">
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">First Name</label><input type="text" name="firstName" value="${u.firstName}" class="input-field text-sm py-2.5" required></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Last Name</label><input type="text" name="lastName" value="${u.lastName}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">First Name <span class="text-red-500">*</span></label><input type="text" name="firstName" value="${u.firstName}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Last Name <span class="text-red-500">*</span></label><input type="text" name="lastName" value="${u.lastName}" class="input-field text-sm py-2.5" required></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4 mb-5">
                                         <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Middle Name</label><input type="text" name="middleName" value="${u.middleName || ''}" class="input-field text-sm py-2.5"></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Age</label><input type="number" name="age" value="${u.age || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Age</label><input type="number" name="age" value="${u.age || ''}" class="input-field text-sm py-2.5"></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4 mb-5">
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Birthday</label><input type="date" name="birthday" value="${u.birthday ? u.birthday.split('T')[0] : ''}" class="input-field text-sm py-2.5" required></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Ethnicity</label><input type="text" name="ethnicity" value="${u.ethnicity || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Birthday</label><input type="date" name="birthday" value="${u.birthday ? u.birthday.split('T')[0] : ''}" class="input-field text-sm py-2.5"></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Ethnicity</label><input type="text" name="ethnicity" value="${u.ethnicity || ''}" class="input-field text-sm py-2.5"></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4 mb-5">
                                         <div class="space-y-2">
                                             <label class="text-xs font-bold text-gray-600 block">Sex/Gender</label>
-                                            <select name="gender" class="input-field text-sm py-2.5" required>
-                                                <option value="" disabled ${!u.gender ? 'selected' : ''}>-- Select --</option>
+                                            <select name="gender" class="input-field text-sm py-2.5">
+                                                <option value="" ${!u.gender ? 'selected' : ''}>-- Select --</option>
                                                 <option value="Male" ${u.gender === 'Male' ? 'selected' : ''}>Male</option>
                                                 <option value="Female" ${u.gender === 'Female' ? 'selected' : ''}>Female</option>
                                             </select>
                                         </div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Blood Type</label><input type="text" name="bloodType" value="${u.bloodType || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Blood Type</label><input type="text" name="bloodType" value="${u.bloodType || ''}" class="input-field text-sm py-2.5"></div>
                                     </div>
                                     <div class="grid grid-cols-2 gap-4 mb-5">
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Height (m)</label><input type="number" step="0.01" name="heightInfo" value="${u.heightInfo || ''}" class="input-field text-sm py-2.5" required></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Weight (kg)</label><input type="number" step="0.1" name="weightInfo" value="${u.weightInfo || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Height (m)</label><input type="number" step="0.01" name="heightInfo" value="${u.heightInfo || ''}" class="input-field text-sm py-2.5"></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Weight (kg)</label><input type="number" step="0.1" name="weightInfo" value="${u.weightInfo || ''}" class="input-field text-sm py-2.5"></div>
                                     </div>
                                     <div class="space-y-5">
                                         <div class="space-y-2">
                                             <label class="text-xs font-bold text-gray-600 block">Educational Attainment</label>
-                                            <select name="education" class="input-field text-sm py-2.5" required>
-                                                ${educationOptions.map(opt => `<option value="${opt.value}" ${u.education === opt.value ? 'selected' : ''} ${opt.value === '' ? 'disabled' : ''}>${opt.label}</option>`).join('')}
+                                            <select name="education" class="input-field text-sm py-2.5">
+                                                ${educationOptions.map(opt => `<option value="${opt.value}" ${u.education === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
                                             </select>
                                         </div>
                                     </div>
@@ -19453,11 +19441,11 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 <div class="p-6 bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:border-brand-200 transition-colors">
                                     <h3 class="text-xs font-bold text-gray-400 uppercase mb-5 tracking-wider flex items-center gap-2"><i class="ph-fill ph-phone text-brand-500"></i> Contact & Address</h3>
                                     <div class="space-y-5">
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Personal Email</label><input type="email" name="personalEmail" value="${u.personalEmail || ''}" class="input-field text-sm py-2.5" required></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Contact Number</label><input type="tel" name="contactNumber" value="${u.contactNumber || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Personal Email</label><input type="email" name="personalEmail" value="${u.personalEmail || ''}" class="input-field text-sm py-2.5"></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Contact Number</label><input type="tel" name="contactNumber" value="${u.contactNumber || ''}" class="input-field text-sm py-2.5"></div>
                                         <div class="space-y-2">
                                             <label class="text-xs font-bold text-gray-600 flex items-center">Home Address ${privateFieldBadge}</label>
-                                            <textarea name="homeAddress" class="input-field text-sm py-2.5 resize-none" rows="2" required>${u.homeAddress || ''}</textarea>
+                                            <textarea name="homeAddress" class="input-field text-sm py-2.5 resize-none" rows="2">${u.homeAddress || ''}</textarea>
                                             <p class="text-[10px] text-gray-400 italic"><i class="ph ph-eye-slash"></i> Hidden from other users</p>
                                         </div>
                                     </div>
@@ -19468,8 +19456,8 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                 <div class="p-6 bg-white rounded-2xl border-2 border-gray-200 shadow-sm hover:border-brand-200 transition-colors">
                                     <h3 class="text-xs font-bold text-gray-400 uppercase mb-5 tracking-wider flex items-center gap-2"><i class="ph-fill ph-graduation-cap text-brand-500"></i> Academic & Govt IDs</h3>
                                     <div class="space-y-5">
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Department</label><input type="text" name="department" value="${u.department}" class="input-field text-sm py-2.5" required></div>
-                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Subject Handled</label><input type="text" name="subject" value="${u.subject || ''}" class="input-field text-sm py-2.5" required></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Department</label><input type="text" name="department" value="${u.department || ''}" class="input-field text-sm py-2.5"></div>
+                                        <div class="space-y-2"><label class="text-xs font-bold text-gray-600 block">Subject Handled</label><input type="text" name="subject" value="${u.subject || ''}" class="input-field text-sm py-2.5"></div>
                                         
                                         <!-- Designation -->
                                         <div class="space-y-2">
@@ -19488,7 +19476,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                             </p>
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div>
-                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Advisory Grade Level *</label>
+                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Advisory Grade Level</label>
                                                     <select id="advisoryGradeInput" name="advisoryGrade" class="input-field text-sm py-2.5 bg-white">
                                                         <option value="" disabled ${!curAdvGrade ? 'selected' : ''}>-- Select Grade Level --</option>
                                                         <option value="Grade 7" ${curAdvGrade === 'Grade 7' ? 'selected' : ''}>Grade 7</option>
@@ -19502,7 +19490,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Section Name (ALL CAPS) *</label>
+                                                    <label class="text-xs font-bold text-gray-600 block mb-1">Section Name (ALL CAPS)</label>
                                                     <input type="text" id="advisorySectionNameInput" name="advisorySectionName" value="${curAdvSecName || ''}" placeholder="e.g. RUBY, RIZAL, DIAMOND" oninput="this.value = this.value.toUpperCase()" class="input-field text-sm py-2.5 uppercase font-bold tracking-wide bg-white">
                                                     <p class="text-[10px] text-gray-400 mt-1">Converted to ALL CAPS automatically.</p>
                                                 </div>
@@ -19531,39 +19519,35 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-gray-100 mt-3">
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">PhilHealth ID ${privateFieldBadge}</label>
-                                                 <input type="text" name="philHealth" value="${u.philHealth || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="philHealth" value="${u.philHealth || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">GSIS No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="gsis" value="${u.gsis || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="gsis" value="${u.gsis || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">UMID ${privateFieldBadge}</label>
-                                                 <input type="text" name="umid" value="${u.umid || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="umid" value="${u.umid || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">Pag-Ibig No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="pagIbig" value="${u.pagIbig || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="pagIbig" value="${u.pagIbig || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">TIN ${privateFieldBadge}</label>
-                                                 <input type="text" name="tin" value="${u.tin || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="tin" value="${u.tin || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">PhilSys No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="philSys" value="${u.philSys || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="philSys" value="${u.philSys || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">PRC No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="prc" value="${u.prc || ''}" class="input-field text-sm py-2.5" required>
-                                             </div>
-                                             <div class="space-y-2">
-                                                 <label class="text-xs font-bold text-gray-600 flex items-center">Agency No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="agencyNo" value="${u.agencyNo || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="prc" value="${u.prc || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                              <div class="space-y-2">
                                                  <label class="text-xs font-bold text-gray-600 flex items-center">Employee No. ${privateFieldBadge}</label>
-                                                 <input type="text" name="employeeNo" value="${u.employeeNo || ''}" class="input-field text-sm py-2.5" required>
+                                                 <input type="text" name="employeeNo" value="${u.employeeNo || ''}" class="input-field text-sm py-2.5">
                                              </div>
                                         </div>
                                         <p class="text-[10px] text-gray-400 italic -mt-2"><i class="ph ph-eye-slash"></i> These IDs are hidden from other users</p>
@@ -20227,11 +20211,19 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 
                 let allValid = true;
                 inputs.forEach(input => {
-                    // Exclude special/optional fields from default validation
-                    if (input.name === 'newPassword' || input.name === 'confirmPassword' || input.name === 'gradeLevelCheckbox' || input.name === 'advisoryGrade' || input.name === 'advisorySectionName') return;
-                    if (input.required && !input.value.trim()) { allValid = false; input.classList.add('border-red-500'); } else input.classList.remove('border-red-500');
+                    // Only First Name and Last Name are strictly required
+                    if (input.name === 'firstName' || input.name === 'lastName') {
+                        if (!input.value.trim()) {
+                            allValid = false;
+                            input.classList.add('border-red-500');
+                        } else {
+                            input.classList.remove('border-red-500');
+                        }
+                    } else {
+                        input.classList.remove('border-red-500');
+                    }
                 });
-                if (!allValid) { this.toast('Please fill in all required fields.', 'error'); return; }
+                if (!allValid) { this.toast('Please provide your First Name and Last Name.', 'error'); return; }
 
                 if (btn) {
                     btn.disabled = true;
@@ -20247,6 +20239,7 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                             updated[input.name] = input.value;
                         }
                     });
+                    updated.agencyNo = '';
 
                     // Collect Multi-Select Grade Levels Handled Checkboxes
                     const checkedGrades = Array.from(document.querySelectorAll('input[name="gradeLevelCheckbox"]:checked')).map(cb => cb.value);
