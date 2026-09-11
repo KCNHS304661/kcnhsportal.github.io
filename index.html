@@ -1,7 +1,10 @@
 <!-- 
-    School Portal - v4.7.6
+    School Portal - v4.7.7
 
     CHANGELOG:
+    v4.7.7 (Sep 11, 2026 10:35 AM) - Developer User Account Deletion [FIX]:
+    - [FIX] Delete Account via User Manager: Enabled live account deletion in devDeleteUser connected to the live deleteUser backend API, strictly restricted execution and button visibility exclusively to Developers, added safeguards preventing self-deletion, and ensured real-time list and state updates.
+
     v4.7.6 (Sep 10, 2026 10:05 AM) - Profile Agency Number Removal [FIX]:
     - [FIX] Profile Details Cleanup: Removed the unnecessary Agency Number field from the Profile Details form (Academic & Govt IDs section).
 
@@ -15,9 +18,6 @@
     v4.7.3 (Aug 13, 2026 11:26 AM) - Admin Designation Option [FEAT]:
     - [FEAT] Admin Designation Support: Added "Admin" option to the Designation dropdown in My Profile, allowing administrators and system leads to set Admin as their official designation.
 
-    v4.7.2 (Aug 13, 2026 11:15 AM) - Password Peek Icon In-Bar Alignment [FIX]:
-    - [FIX] Password Peek Icon Positioning: Fixed absolute right alignment and vertical centering of password eye toggle buttons inside input bars by defining explicit `.password-toggle-btn` styling with `top: 50%; transform: translateY(-50%); right: 0.75rem`.
-
     INSTRUCTIONS:
     1. Deploy your Google Apps Script backend.
     2. Paste the Web App URL into the `const API_URL` variable inside the script tag below.
@@ -29,7 +29,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>School Portal v4.7.6</title>
+    <title>School Portal v4.7.7</title>
 
     <!-- Tailwind CSS (Compiled) -->
     <style id="tailwind-css">
@@ -19663,21 +19663,28 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
                         </div>
                         <input type="text" placeholder="Search by name, email, or role..." class="input-field mb-4" onkeyup="const val = this.value.toLowerCase(); document.querySelectorAll('.user-item').forEach(el => { el.style.display = el.innerText.toLowerCase().includes(val) ? 'flex' : 'none'; })">
                         <div class="flex-1 overflow-y-auto custom-scroll space-y-2">
-                            ${this.users.map(u => `
+                            ${this.users.map(u => {
+                                const isSelf = this.user && String(this.user.id) === String(u.id);
+                                const canDelete = this.isDev() && !isSelf;
+                                return `
                                 <div class="user-item flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                                     <div class="flex items-center gap-3 cursor-pointer group" onclick="App.viewUserProfile('${u.id}')">
                                         <img src="${this.resolveImageUrl(u.avatar) || `https://ui-avatars.com/api/?name=${u.firstName}+${u.lastName}`}" class="w-10 h-10 rounded-full bg-gray-200 object-cover group-hover:ring-2 ring-brand-300 transition-all">
                                         <div>
-                                            <p class="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors">${u.firstName} ${u.lastName}</p>
+                                            <p class="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors flex items-center gap-1.5">
+                                                ${u.firstName} ${u.lastName}
+                                                ${isSelf ? '<span class="px-1.5 py-0.5 text-[10px] bg-brand-100 text-brand-700 font-bold rounded">You</span>' : ''}
+                                            </p>
                                             <p class="text-xs text-gray-500">${u.role} • ${u.email}</p>
                                         </div>
                                     </div>
                                     <div class="flex gap-2">
                                         <button onclick="App.devChangePassword('${u.id}')" class="p-2 text-brand-600 hover:bg-brand-50 rounded-lg text-xs font-bold">Reset PW</button>
-                                        ${this.isDev() ? `<button onclick="App.devDeleteUser('${u.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold">Delete</button>` : ''}
+                                        ${canDelete ? `<button onclick="App.devDeleteUser('${u.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors">Delete</button>` : ''}
                                     </div>
                                 </div>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -19696,13 +19703,32 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
             },
 
             devDeleteUser(userId) {
-                this.askConfirm("Delete User Account?", "This will permanently remove the user.", async () => {
-                    // Assuming deleteUser action
-                    // await this.api('deleteUser', {id: userId});
-                    // Simulating for prototype if API not explicit, but ideally:
-                    this.users = this.users.filter(u => u.id !== userId);
-                    this.toast('User deleted.');
-                    this.openUserManager(); // Refresh list
+                if (!this.isDev()) {
+                    this.toast("Access Denied: Only developers can delete accounts.", "error");
+                    return;
+                }
+                const target = this.users.find(u => String(u.id) === String(userId));
+                if (!target) return;
+                if (this.user && String(this.user.id) === String(userId)) {
+                    this.toast("You cannot delete your own account.", "error");
+                    return;
+                }
+                const name = `${target.firstName} ${target.lastName}`;
+                this.askConfirm("Delete User Account?", `Are you sure you want to permanently delete <strong>${name}</strong> (${target.email})? All user data will be removed from the database. This action cannot be undone.`, async () => {
+                    this.toast(`Deleting account for ${name}...`, "info");
+                    try {
+                        const res = await this.api('deleteUser', { id: userId });
+                        if (res && res.status === 'success') {
+                            this.users = this.users.filter(u => String(u.id) !== String(userId));
+                            this.toast(`User ${name} has been permanently deleted.`, 'success');
+                        } else {
+                            this.toast(res?.message || 'Failed to delete user account.', 'error');
+                        }
+                    } catch (err) {
+                        this.toast(err.message || 'Error deleting user account.', 'error');
+                    } finally {
+                        setTimeout(() => this.openUserManager(), 350);
+                    }
                 });
             },
 
